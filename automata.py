@@ -92,3 +92,27 @@ class Automata(object):
 
         # Return True if all conditions pass.
         return True
+
+    def get_information(self):
+        """Returns a string giving information about the Automata."""
+        information = []
+        for state_name in self.start_states:
+            information += ['Start State:', state_name, '\t']
+            information += ['Transitions:',
+                            str(self.transitions[state_name]), '\n']
+
+        for state_name in self.states:
+            if (state_name not in self.start_states and
+                state_name not in self.terminal_states):
+                information += ['State:', state_name, '\t']
+                information += ['Transitions:',
+                                str(self.transitions[state_name]), '\n']
+
+        for state_name in self.terminal_states:
+            information += ['Terminal State:', state_name, '\t']
+            information += ['Transitions:',
+                            str(self.transitions[state_name]), '\n']
+        return ' '.join(information)
+
+    def __str__(self):
+        return self.get_information()
