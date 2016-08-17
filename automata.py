@@ -4,7 +4,7 @@ class Automata(object):
     """Object that represents a finite state Automata.
 
     Properties:
-        states: A list of all the states where each state is a letter.
+        states: A list of all the states' unique identifiers.
         start_states: A list of all the starting states.
         terminal_states: A list of all the terminal states.
         transitions: A nested dictionary representing the transition function.
@@ -24,7 +24,7 @@ class Automata(object):
         """Add a state to the automata.
 
         Args:
-            state: A string of the name of the state.
+            state: A unique identifier for the state.
             is_start: Boolean indicating whether the state is a start state.
             is_terminal: Boolean indicating whether the state is a terminal
                 state.
@@ -97,21 +97,19 @@ class Automata(object):
         """Returns a string giving information about the Automata."""
         information = []
         for state_name in self.start_states:
-            information += ['Start State:', state_name, '\t']
+            information += ['Start State:', str(state_name), '\t']
             information += ['Transitions:',
                             str(self.transitions[state_name]), '\n']
 
         for state_name in self.states:
             if (state_name not in self.start_states and
                 state_name not in self.terminal_states):
-                information += ['State:', state_name, '\t']
+                information += ['State:', str(state_name), '\t']
                 information += ['Transitions:',
                                 str(self.transitions[state_name]), '\n']
 
         for state_name in self.terminal_states:
-            information += ['Terminal State:', state_name, '\t']
-            information += ['Transitions:',
-                            str(self.transitions[state_name]), '\n']
+            information += ['Terminal State:', str(state_name), '\t']
         return ' '.join(information)
 
     def __str__(self):
