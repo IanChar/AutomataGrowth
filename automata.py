@@ -110,6 +110,8 @@ class Automata(object):
 
         for state_name in self.terminal_states:
             information += ['Terminal State:', str(state_name), '\t']
+            information += ['Transitions:',
+                            str(self.transitions[state_name]), '\n']
         return ' '.join(information)
 
     def __str__(self):
