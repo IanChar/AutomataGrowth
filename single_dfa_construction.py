@@ -54,6 +54,57 @@ def subset_construction(string):
             dfa.add_transition(curr_state, to_state_key, letter)
     return dfa
 
+def intersection_construction(string):
+    """Construct a DFA using the intersection construction method.
+
+    Args:
+        string: The generalized string in the form of a nested list.
+            e.g. [['A','C','G','T'],['A','G'],['G']]
+        Returns: An Automata object representing the final DFA.
+    """
+    string_size = len(string)
+
+    # We assume that there will be string length + 1 states in the DFA.
+    dfa = automata.Automata()
+    dfa.add_state(0, is_start=True)
+    for i in range(1, string_size):
+        dfa.add_state(i)
+    dfa.add_state(string_size, is_terminal=True)
+
+    # Form the string bit-mapping that will be used for comparison.
+    # e.g. {AC} -> 1010
+    string_codes = []
+    for letters in string:
+        curr_code = 0
+        for letter in letters:
+            curr_code = curr_code | 1 << ALPHABET.index(letter)
+        string_codes.append(curr_code)
+
+    # Add transitions.
+    for state in range(string_size + 1):
+        for letter_index, letter in enumerate(ALPHABET):
+            # Build a string to compare to, if we are at state we already know
+            # we have read in certain characters.
+            compare_str = string_codes[:state]
+            compare_str.append(0 | 1 << letter_index)
+            if len(compare_str) > string_size:
+                compare_str.pop(0)
+            largest_transition_found = False
+            while not largest_transition_found:
+                # Compare downwards since likely to see failure more quickly.
+                matches = True
+                for i in range(len(compare_str) - 1, -1, -1):
+                    if compare_str[i] & string_codes[i] == 0:
+                        matches = False
+                        break
+                if matches:
+                    dfa.add_transition(state, len(compare_str), letter)
+                    largest_transition_found = True
+                else:
+                    compare_str.pop(0)
+    return dfa
+
+
 if __name__ == '__main__':
-    print subset_construction([['A', 'C', 'G', 'T'], ['A', 'G'], ['G']])
+    print intersection_construction([['A', 'C', 'G', 'T'], ['A', 'G'], ['G']])
 
