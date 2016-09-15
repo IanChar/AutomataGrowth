@@ -30,15 +30,7 @@ def find_average_time(string_length, trials, technique):
     total_time = 0
     for _ in range(trials):
         # Build the random string.
-        random_string = []
-        for _ in range(string_length):
-            rand_code = random.randint(0, 14) + 1
-            rand_letters = []
-            for digit in range(3):
-                if rand_code & (1 << digit) > 0:
-                    rand_letters.append(single_dfa_construction
-                                        .ALPHABET[digit])
-            random_string.append(rand_letters)
+        random_string = build_random_string(string_length)
         # Time for the random string.
         total_time += time_method(random_string, technique)
     return total_time / trials
@@ -71,7 +63,51 @@ def plot_comparison(trials, max_string_length):
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0)
     plt.show()
 
+def test_accuracy(trials, string_length):
+    """Compares the two constructions to make sure they are the same.
 
+    Args:
+        trials: The amount of tests to perform.
+        string_lenth: The length of the random strings to construct.
+    """
+    failures = 0
+    for _ in range(trials):
+        test_string = build_random_string(string_length)
+        sub = single_dfa_construction.subset_construction(list(test_string))
+        inter = single_dfa_construction.intersection_construction(test_string)
+        if sub != inter:
+            print '--------------------FAILED-----------------------'
+            print 'String:', test_string
+            print '\nSubset Construction:'
+            print sub
+            print '\nIntersection Construction:'
+            print inter
+            failures += 1
+    print '-----------------------------------------------------------'
+    print ('Tests complete: %d Successes, %d Failures'
+           % (trials - failures, failures))
+
+
+def build_random_string(length):
+    """Build a random string to use.
+
+    Args:
+        length: The length of the string to construct.
+    Returns:
+        The generalized random string.
+    """
+    random_string = []
+    for _ in range(length):
+        rand_code = random.randint(0,
+                                   2 ** len(single_dfa_construction.ALPHABET)
+                                   - 2) + 1
+        rand_letters = []
+        for digit in range(len(single_dfa_construction.ALPHABET)):
+            if rand_code & (1 << digit) > 0:
+                rand_letters.append(single_dfa_construction
+                                    .ALPHABET[digit])
+        random_string.append(rand_letters)
+    return random_string
 
 if __name__ == '__main__':
     plot_comparison(1000, 16)

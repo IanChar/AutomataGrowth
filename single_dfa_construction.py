@@ -64,12 +64,10 @@ def intersection_construction(string):
     """
     string_size = len(string)
 
-    # We assume that there will be string length + 1 states in the DFA.
+    # Create a new DFA and addd the start state.
     dfa = automata.Automata()
-    dfa.add_state(0, is_start=True)
-    for i in range(1, string_size):
-        dfa.add_state(i)
-    dfa.add_state(string_size, is_terminal=True)
+    start_state = tuple([0])
+    dfa.add_state(start_state, is_start=True)
 
     # Form the string bit-mapping that will be used for comparison.
     # e.g. {AC} -> 1010
@@ -81,30 +79,59 @@ def intersection_construction(string):
         string_codes.append(curr_code)
 
     # Add transitions.
-    for state in range(string_size + 1):
+    to_compute = deque([start_state])
+    while len(to_compute) > 0:
+        curr_state = to_compute.pop()
         for letter_index, letter in enumerate(ALPHABET):
             # Build a string to compare to, if we are at state we already know
             # we have read in certain characters.
-            compare_str = string_codes[:state]
+            compare_str = string_codes[:max(curr_state)]
             compare_str.append(0 | 1 << letter_index)
             if len(compare_str) > string_size:
                 compare_str.pop(0)
-            largest_transition_found = False
-            while not largest_transition_found:
-                # Compare downwards since likely to see failure more quickly.
-                matches = True
-                for i in range(len(compare_str) - 1, -1, -1):
-                    if compare_str[i] & string_codes[i] == 0:
-                        matches = False
-                        break
-                if matches:
-                    dfa.add_transition(state, len(compare_str), letter)
-                    largest_transition_found = True
-                else:
-                    compare_str.pop(0)
+            matched_lengths = _find_possible_transitions(curr_state,
+                                                         compare_str,
+                                                         string_codes)
+
+            # Form a state using matched_lengths, add to DFA if not present.
+            to_state = tuple(matched_lengths[::-1])
+            if to_state not in dfa.states:
+                dfa.add_state(to_state, is_terminal=(string_size in matched_lengths))
+                to_compute.append(to_state)
+            dfa.add_transition(curr_state, to_state, letter)
     return dfa
+
+def _find_possible_transitions(curr_state, compare_str, string_codes):
+    """Find the possible transitions for a state in iteration method.
+
+    Args:
+        curr_state: The current state that we are looking at represented as a
+            tuple.
+        compare_str: The generated code for the current state plus some letter.
+        string_codes: The code for the language we are recognizing.
+    Returns:
+        A list of lengths of strings that could be transitioned to.
+    """
+    # Find all of the lengths of this compare string that match the
+    # generalized string.
+    matched_lengths = []
+    for start_index in range(len(compare_str)):
+        # Skip over this iteration if it would be impossible to get
+        # to this string length.
+        if len(compare_str) - start_index - 1 not in curr_state:
+            continue
+        matches = True
+        # Check the current iteration of the string.
+        for i in range(0, len(compare_str) - start_index):
+            if compare_str[start_index + i] & string_codes[i] == 0:
+                matches = False
+                break
+        if matches:
+            matched_lengths.append(len(compare_str) - start_index)
+    matched_lengths.append(0) # Since 0 always matches.
+    return matched_lengths
 
 
 if __name__ == '__main__':
-    print intersection_construction([['A', 'C', 'G', 'T'], ['A', 'G'], ['G']])
-
+    print subset_construction([['C', 'T'], ['A', 'G'], ['G', 'C']])
+    print intersection_construction([['C', 'T'], ['A', 'G'], ['G', 'C']])

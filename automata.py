@@ -116,3 +116,19 @@ class Automata(object):
 
     def __str__(self):
         return self.get_information()
+
+    def __eq__(self, other):
+        if not isinstance(other, Automata):
+            return False
+        if set(self.states) != set(other.states):
+            return False
+        if set(self.start_states) != set(other.start_states):
+            return False
+        if set(self.terminal_states) != set(other.terminal_states):
+            return False
+        if self.transitions != other.transitions:
+            return False
+        return True
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
