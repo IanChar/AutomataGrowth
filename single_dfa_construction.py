@@ -54,6 +54,58 @@ def subset_construction(string):
             dfa.add_transition(curr_state, to_state_key, letter)
     return dfa
 
+def binary_subset_construction(string):
+    """Construct a DFA using subset construction algorithm.
+
+    Args:
+        string: The generalized string in the form of a nested list.
+            e.g. [['A','C','G','T'],['A','G'],['G']]
+        Returns: An Automata object representing the final DFA.
+    """
+    # Assume linear form of the NFA w/o construction. To do this just assume
+    # that each index of the generalized string is the transition function
+    # for the ith node.
+    string_size = len(string)
+    string.append([])
+
+    # Construct string codes.
+    string_codes = []
+    for letters in string:
+        curr_code = 0
+        for letter in letters:
+            curr_code = curr_code | 1 << ALPHABET.index(letter)
+        string_codes.append(curr_code)
+
+    # Set up automata and add start state.
+    dfa = automata.Automata()
+    start_state = tuple([0])
+    dfa.add_state(start_state, is_start=True)
+
+    # Add and compute transitions for all of the accessible states.
+    to_evaluate = deque()
+    to_evaluate.append(start_state)
+
+    while len(to_evaluate) > 0:
+        curr_state = to_evaluate.pop()
+        # Compute the transtions for the current state.
+        for letter_index, letter in enumerate(ALPHABET):
+            to_states = [0] if 0 in curr_state else []
+            # Find all states that can be transitioned to with this letter.
+            for nfa_state in curr_state:
+                if (1 << letter_index) & string_codes[nfa_state] > 0:
+                    to_states.append(nfa_state + 1)
+            # Check if this state is already in the list of states.
+            # We can assume that to_states is always in increasing order based
+            # on the implementation above.
+            to_states = tuple(to_states)
+            if to_states not in dfa.states:
+                dfa.add_state(to_states,
+                              is_terminal=(string_size in to_states))
+                to_evaluate.append(to_states)
+            # Add transition.
+            dfa.add_transition(curr_state, to_states, letter)
+    return dfa
+
 def intersection_construction(string):
     """Construct a DFA using the intersection construction method.
 
@@ -96,7 +148,8 @@ def intersection_construction(string):
             # Form a state using matched_lengths, add to DFA if not present.
             to_state = tuple(matched_lengths[::-1])
             if to_state not in dfa.states:
-                dfa.add_state(to_state, is_terminal=(string_size in matched_lengths))
+                dfa.add_state(to_state, is_terminal=(string_size
+                                                     in matched_lengths))
                 to_compute.append(to_state)
             dfa.add_transition(curr_state, to_state, letter)
     return dfa
@@ -134,4 +187,5 @@ def _find_possible_transitions(curr_state, compare_str, string_codes):
 
 if __name__ == '__main__':
     print subset_construction([['C', 'T'], ['A', 'G'], ['G', 'C']])
+    print binary_subset_construction([['C', 'T'], ['A', 'G'], ['G', 'C']])
     print intersection_construction([['C', 'T'], ['A', 'G'], ['G', 'C']])

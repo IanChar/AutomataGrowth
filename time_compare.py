@@ -48,11 +48,16 @@ def plot_comparison(trials, max_string_length):
     sub_constructs = [find_average_time(x, trials,
                       single_dfa_construction.subset_construction)
                       for x in word_lengths]
+    sub_binary = [find_average_time(x, trials,
+                  single_dfa_construction.binary_subset_construction)
+                  for x in word_lengths]
     intersections = [find_average_time(x, trials,
                      single_dfa_construction.intersection_construction)
                      for x in word_lengths]
     # Plot the times.
     plt.plot(word_lengths, sub_constructs, 'ro', label='Subset Construction')
+    plt.plot(word_lengths, sub_binary, 'go', label='Binary Subset '
+             'Construction')
     plt.plot(word_lengths, intersections, 'bo',
              label='Intersection Construction')
     plt.xlabel('Word Length')
