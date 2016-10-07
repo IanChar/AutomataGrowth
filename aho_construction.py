@@ -64,6 +64,21 @@ class State(object):
             to_print.append('%s -> (%d; %s)' % (key, value.level, value.name))
         return '\n'.join(to_print)
 
+    def __eq__(self, other):
+        """Check if equal to another state. Does not check transitions."""
+        if not isinstance(other, State):
+            return False
+        if self.name != other.name:
+            return False
+        if self.level != other.level:
+            return False
+        if self.fallback is not other.fallback:
+            return False
+        return True
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 def construct_dfa(string, alphabet):
     """Constructs a dfa using aho-corasick construction.
 
@@ -100,9 +115,18 @@ def construct_dfa(string, alphabet):
                 new_state = State(','.join(fall_group[1:]),
                                   curr_state.level + 1)
                 new_state.set_fallback(fall_group[0])
+                # Check if we can merge this state with something in the same
+                # level (i.e. in the queue).
+                is_new = True
+                for added_state in queue:
+                    if added_state == new_state:
+                        new_state = added_state
+                        is_new = False
+                        break
                 curr_state.add_transitions({l:new_state
-                                            for l in fall_group[1:]})
-                queue.appendleft(new_state)
+                                           for l in fall_group[1:]})
+                if is_new:
+                    queue.appendleft(new_state)
 
         # Fill out the rest of the transitions for curr_state.
         curr_state.copy_fallback_transitions()
@@ -168,8 +192,3 @@ def print_dfa(root_state):
         for child in curr.transitions.values():
             if child not in seen and child not in queue:
                 queue.appendleft(child)
-
-
-
-if __name__ == '__main__':
-    print_dfa(construct_dfa([['C', 'T'], ['A', 'G'], ['C', 'G']], ['A', 'C', 'G', 'T']))

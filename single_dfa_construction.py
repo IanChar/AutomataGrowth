@@ -4,7 +4,14 @@ from collections import deque
 import automata
 
 # DNA Alphabet strings are made from.
-ALPHABET = ['A', 'T', 'C', 'G']
+
+# DNA Alphabet
+ALPHABET = ['A', 'C', 'G', 'T']
+
+# Full English alphabet.
+# ALPHABET = [chr(x) for x in range(60, 91)]
+
+# ALPHABET = [chr(x) for x in range(60, 70)]
 
 def subset_construction(string):
     """Construct a DFA using subset construction algorithm.
