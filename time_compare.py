@@ -5,6 +5,7 @@ import random
 import matplotlib.pyplot as plt
 
 import single_dfa_construction
+import aho_construction
 
 def time_method(string, technique):
     """Times how long the technique takes to make a corresponding DFA.
@@ -68,6 +69,37 @@ def plot_comparison(trials, max_string_length):
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0)
     plt.show()
 
+def plot_aho_comparison(trials, max_string_length):
+    """Compute averages the techniques and display results on same plot.
+
+    Args:
+        trials: The number of trials that should be performed for each of the
+            string lengths.
+        max_string_length: The maximum length of the string to test for.
+    """
+    # Calculate the times.
+    word_lengths = range(3, max_string_length + 1)
+    sub_binary = [find_average_time(x, trials,
+                  single_dfa_construction.binary_subset_construction)
+                  for x in word_lengths]
+    def aho_wrapper(string):
+        """Wraps the aho_construction function call."""
+        return aho_construction.construct_dfa(string,
+                                              single_dfa_construction.ALPHABET)
+    ahos = [find_average_time(x, trials, aho_wrapper)
+                     for x in word_lengths]
+    # Plot the times.
+    plt.plot(word_lengths, ahos, 'ro', label='Aho Construction')
+    plt.plot(word_lengths, sub_binary, 'go', label='Binary Subset '
+             'Construction')
+    plt.xlabel('Word Length')
+    plt.xlim([2.5, max_string_length + 0.5])
+    plt.ylabel('Average Time (s)')
+    plt.title('Average Time for Construction vs Word Length'
+              ' (%d trials per word)' % trials)
+    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0)
+    plt.show()
+
 def test_accuracy(trials, string_length):
     """Compares the two constructions to make sure they are the same.
 
@@ -115,4 +147,4 @@ def build_random_string(length):
     return random_string
 
 if __name__ == '__main__':
-    plot_comparison(1000, 16)
+    plot_aho_comparison(1000, 16)
