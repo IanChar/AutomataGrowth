@@ -81,16 +81,4 @@ def run_exhaustive_test(max_size, trials, alphabet):
         print '%d: %d/%d incorrect.' % (size, incorrect, trials)
 
 if __name__ == '__main__':
-    # run_exhaustive_test(10, 1000, ['A', 'C', 'G', 'T'])
-    alphabet = ['A', 'C', 'G', 'T']
-    found_example = False
-    while not found_example:
-        # string = time_compare.build_random_string(4)
-        string = [['A', 'C', 'G', 'T'], ['A', 'C', 'G', 'T'], ['G', 'T'], ['C']]
-        if not compare_methods(list(string), alphabet):
-            print string, '\n'
-            aho = aho_construction.construct_dfa(string, alphabet)
-            aho_construction.print_dfa(aho)
-            print aho_to_dfa(aho, 4), '\n'
-            print single_dfa_construction.binary_subset_construction(string)
-            found_example = True
+    run_exhaustive_test(10, 1000, ['A', 'C', 'G', 'T'])

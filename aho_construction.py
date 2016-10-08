@@ -7,13 +7,15 @@ class State(object):
     Properties:
         name: Name for the state.
         level: The level in the aho corasick this state represents.
+        unique_id: ID to differentiate state.
         transitions: The transitions of the state represented as a dictionary
             mapping a letter to a state.
         fallback: The state that we fallback to when seeing a mismatch.
     """
-    def __init__(self, name, level):
+    def __init__(self, name, level, unique_id):
         self.name = name
         self.level = level
+        self.unique_id = unique_id
         self.transitions = {}
         self.fallback = None
 
@@ -58,7 +60,8 @@ class State(object):
 
     def __str__(self):
         to_print = []
-        to_print.append('\nNode: (%d; %s)' % (self.level, self.name))
+        to_print.append('\nNode: (%d; %s; %d)' % (self.level, self.name,
+                                                  self.unique_id))
         to_print.append('Transitions:')
         for key, value in self.transitions.iteritems():
             to_print.append('%s -> (%d; %s)' % (key, value.level, value.name))
@@ -88,13 +91,16 @@ def construct_dfa(string, alphabet):
     Returns:
         Pointer to the root state.
     """
+    state_id = 0
     # Initialize root state and fill in some known properties.
-    root_state = State('Epsilon', 0)
+    root_state = State('Epsilon', 0, state_id)
+    state_id += 1
     root_state.set_fallback(root_state)
     # Add transitions for root.
     # Note we know the first level must be one state since all of their
     # fallbacks must be to the root.
-    level_1 = State(','.join(string[0]), 1)
+    level_1 = State(','.join(string[0]), 1, state_id)
+    state_id += 1
     level_1.set_fallback(root_state)
     for letter in alphabet:
         if letter in string[0]:
@@ -113,7 +119,7 @@ def construct_dfa(string, alphabet):
             fall_groupings = _group_falls(curr_state, root_state, string)
             for fall_group in fall_groupings.values():
                 new_state = State(','.join(fall_group[1:]),
-                                  curr_state.level + 1)
+                                  curr_state.level + 1, state_id)
                 new_state.set_fallback(fall_group[0])
                 # Check if we can merge this state with something in the same
                 # level (i.e. in the queue).
@@ -127,6 +133,7 @@ def construct_dfa(string, alphabet):
                                            for l in fall_group[1:]})
                 if is_new:
                     queue.appendleft(new_state)
+                    state_id += 1
 
         # Fill out the rest of the transitions for curr_state.
         curr_state.copy_fallback_transitions()
@@ -154,25 +161,31 @@ def _group_falls(curr_state, root_state, string):
             fallback: The state that is being fallen back to.
             letter: The letter that causes us to fall there.
         """
-        state_key = (fallback.name, fallback.level)
-        if state_key not in fall_mapping:
-            fall_mapping[state_key] = [fallback, letter]
+        if fallback.unique_id not in fall_mapping:
+            fall_mapping[fallback.unique_id] = [fallback, letter]
         else:
-            fall_mapping[state_key].append(letter)
+            fall_mapping[fallback.unique_id].append(letter)
 
     # Compute the fallback state for each possible foward transition
     # based on three options...
+
     for fwd_letter in string[curr_state.level]:
-        # 1) we can expand on parents fallback.
-        possible_fall = curr_state.fallback.move_to(fwd_letter)
-        if curr_state.fallback.level < possible_fall.level:
-            add_to_mapping(possible_fall, fwd_letter)
-        # 2) We can expand from the root.
-        elif root_state.move_to(fwd_letter).level > 0:
-            possible_fall = root_state.move_to(fwd_letter)
-            add_to_mapping(possible_fall, fwd_letter)
-        # 3) The root is our fallback.
-        else:
+        # Start with the parent's fallback and see if we can expand, if not
+        # check its fallback, then its fallback, etc. back to root.
+        prev_fall = None
+        curr_fall = curr_state.fallback
+        fallback_found = False
+        while prev_fall is not curr_fall:
+            if curr_fall.level <= curr_fall.move_to(fwd_letter).level:
+                # We have found our fallback.
+                add_to_mapping(curr_fall.move_to(fwd_letter), fwd_letter)
+                fallback_found = True
+                break
+            else:
+                prev_fall = curr_fall
+                curr_fall = curr_fall.fallback
+        # If no non-epsilon fallback could be found, epsilon is our fallback.
+        if not fallback_found:
             add_to_mapping(root_state, fwd_letter)
     return fall_mapping
 
