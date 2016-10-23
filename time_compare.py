@@ -19,31 +19,30 @@ def time_method(string, technique):
     technique(string)
     return time.time() - start_time
 
-def find_average_time(string_length, trials, technique):
+def find_average_time(strings, technique):
     """Find the average time for calculating a DFA of a certain length.
 
     Args:
-        string_length: The length of the strings that should be considered.
-        trials: The number of trials to average over.
+        strings: Nested list of random strings.
         technique: The function of the technique to use.
     Returns: The average time it took to compute the DFAs.
     """
     total_time = 0
-    for _ in range(trials):
-        # Build the random string.
-        random_string = build_random_string(string_length)
+    for string in strings:
         # Time for the random string.
-        total_time += time_method(random_string, technique)
-    return total_time / trials
+        total_time += time_method(string, technique)
+    return total_time / len(strings)
 
+"""
+Requires refactoring.
 def plot_comparison(trials, max_string_length):
-    """Compute averages the techniques and display results on same plot.
+    Compute averages the techniques and display results on same plot.
 
     Args:
         trials: The number of trials that should be performed for each of the
             string lengths.
         max_string_length: The maximum length of the string to test for.
-    """
+
     # Calculate the times.
     word_lengths = range(3, max_string_length + 1)
     sub_constructs = [find_average_time(x, trials,
@@ -68,6 +67,7 @@ def plot_comparison(trials, max_string_length):
               ' (%d trials per word)' % trials)
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0)
     plt.show()
+"""
 
 def plot_aho_comparison(trials, max_string_length):
     """Compute averages the techniques and display results on same plot.
@@ -79,15 +79,18 @@ def plot_aho_comparison(trials, max_string_length):
     """
     # Calculate the times.
     word_lengths = range(3, max_string_length + 1)
-    sub_binary = [find_average_time(x, trials,
-                  single_dfa_construction.binary_subset_construction)
-                  for x in word_lengths]
+    sub_binary = []
+    ahos = []
     def aho_wrapper(string):
         """Wraps the aho_construction function call."""
         return aho_construction.construct_dfa(string,
                                               single_dfa_construction.ALPHABET)
-    ahos = [find_average_time(x, trials, aho_wrapper)
-                     for x in word_lengths]
+    for length in word_lengths:
+        rand_strings = [build_random_string(length) for _ in range(trials)]
+        sub_binary.append(find_average_time(rand_strings,
+                          single_dfa_construction.binary_subset_construction))
+        ahos.append(find_average_time(rand_strings, aho_wrapper))
+
     # Plot the times.
     plt.plot(word_lengths, ahos, 'ro', label='Aho Construction')
     plt.plot(word_lengths, sub_binary, 'go', label='Binary Subset '
@@ -147,4 +150,4 @@ def build_random_string(length):
     return random_string
 
 if __name__ == '__main__':
-    plot_aho_comparison(1000, 16)
+    plot_aho_comparison(1000, 10)

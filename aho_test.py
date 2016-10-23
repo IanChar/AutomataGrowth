@@ -1,5 +1,8 @@
 """Code to test aho_construction against subset construction."""
+import numpy as np
+import matplotlib.pyplot as plt
 from collections import deque
+
 from automata import Automata
 import aho_construction
 import single_dfa_construction
@@ -80,5 +83,140 @@ def run_exhaustive_test(max_size, trials, alphabet):
                 incorrect += 1
         print '%d: %d/%d incorrect.' % (size, incorrect, trials)
 
+def deduce_failures_calculated(string, alphabet):
+    """Constructs the aho based on the string and then tries to find the number
+       of failures calculated.
+
+    Args:
+        string: The generalized string to compare.
+        alphabet: The alphabet of the string.
+    Returns:
+        Integer of how many failure computations were made.
+    """
+    root = aho_construction.construct_dfa(string, alphabet)
+    # Data structure representing the number of states by level.
+    num_states = [0 for _ in range(len(string) + 1)]
+    # The names of the states we have seen so far.
+    seen = []
+
+    # Do a BFS of the graph that we have made.
+    queue = deque()
+    queue.appendleft(root)
+    while len(queue) > 0:
+        curr_node = queue.pop()
+        # Add children to the queue.
+        for linked_node in curr_node.transitions.values():
+            if linked_node.unique_id not in seen:
+                queue.appendleft(linked_node)
+                seen.append(linked_node.unique_id)
+                num_states[linked_node.level] += 1
+
+    # Now multiply out the number of levels for each with the number of
+    # possible characters in the next level.
+    num_calcs = 0
+    for level_index in range(len(string)):
+        num_calcs += num_states[level_index] * len(string[level_index])
+
+    return num_calcs
+
+def analyze_data(data, make_histogram=False, title=None, upper_bound=None,
+        num_bins=100):
+    """Analyszes the data by estimating the mean and variance.
+
+    Args:
+        data: The data to analyze.
+        make_histogram: Whether to print out a histogram of the data.
+        title: Title to put on the graph.
+        upper_bound: Upper bound data to plot alongside.
+    Returns:
+        Tuple containing (mean, variance).
+    """
+    mean = np.mean(data)
+    var = np.var(data)
+    if make_histogram:
+        if upper_bound:
+            maximum = max([max(data), max(upper_bound)])
+        else:
+            maximum = max(data)
+        bins = np.linspace(0, maximum + 10, num_bins)
+        _, _, _ = plt.hist(data, bins, facecolor='blue', alpha=0.5)
+        if upper_bound is not None:
+            _, _, _ = plt.hist(upper_bound, bins, facecolor='green', alpha=0.5)
+        plt.xlabel('Failure Calculations')
+        if title is None:
+            title = 'Histogram of Failure Calculations'
+        plt.title(' '.join([title, 'Mean = %d Var = %d' % (mean, var)]))
+        plt.grid(True)
+        plt.show()
+    return (mean, var)
+
+def simulate_failure_dist(trials, string_len):
+    """Generates random strings and finds how many failures were calc'd.
+
+    Args:
+        trials: The number of samples to pull from the dist.
+        string_len: The length of the random strings to be generated.
+        alphabet: The alphabet of the strings.
+    Returns:
+        List of samples generated.
+    """
+    data = []
+    upper_bound = []
+    alphabet = ['A', 'C', 'G', 'T']
+    for _ in range(trials):
+        string = time_compare.build_random_string(string_len)
+        data.append(deduce_failures_calculated(string, alphabet))
+        bound = 1
+        for level in string:
+            bound *= len(level)
+        upper_bound.append(bound)
+    return data, upper_bound
+
+def generate_hists(length_range, trials, upper_bounds=False):
+    """Generates histograms for the given length range.
+
+    Args:
+        length_range: Tuple representing the start and stop of the length
+            of random strings to evaluate.
+        trials: The number of samples to pull from the dist.
+        upper_bounds: Whether to include the upper_bounds.
+    """
+    for length in range(length_range[0], length_range[1]):
+        sample, sample_upper = simulate_failure_dist(trials, length)
+        hist_title = 'Failures Calculated: String Length %d' % length
+        if upper_bounds:
+            analyze_data(sample, make_histogram=True, upper_bound=sample_upper,
+                    title=hist_title)
+        else:
+            analyze_data(sample, make_histogram=True, title=hist_title)
+
+
+def plot_trends(length_range, trials):
+    """Generates histograms for the given length range.
+
+    Args:
+        length_range: Tuple representing the start and stop of the length
+            of random strings to evaluate.
+        trials: The number of samples to pull from the dist.
+        upper_bounds: Whether to include the upper_bounds.
+    """
+    # Compute averages and std devs for plotting
+    avgs = []
+    std_devs = []
+    for length in range(length_range[0], length_range[1]):
+        sample, _ = simulate_failure_dist(trials, length)
+        length_avg, length_var = analyze_data(sample)
+        avgs.append(length_avg)
+        std_devs.append(np.sqrt(length_var))
+
+    plt.errorbar(range(length_range[0], length_range[1]), avgs, yerr=std_devs)
+    plt.title('Average Failure Calculations vs. String Length')
+    plt.xlabel('String Length')
+    plt.ylabel('Failure Calculations')
+    plt.xlim([length_range[0] - 1, length_range[1]])
+    plt.grid(True)
+    plt.show()
+
+
 if __name__ == '__main__':
-    run_exhaustive_test(10, 1000, ['A', 'C', 'G', 'T'])
+    plot_trends((3, 10), 10000)

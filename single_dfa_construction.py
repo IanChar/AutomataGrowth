@@ -9,9 +9,9 @@ import automata
 ALPHABET = ['A', 'C', 'G', 'T']
 
 # Full English alphabet.
-# ALPHABET = [chr(x) for x in range(60, 91)]
+# ALPHABET = [chr(x) for x in range(65, 92)]
 
-# ALPHABET = [chr(x) for x in range(60, 70)]
+# ALPHABET = [chr(x) for x in range(65, 67)]
 
 def subset_construction(string):
     """Construct a DFA using subset construction algorithm.
