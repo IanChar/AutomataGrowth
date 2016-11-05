@@ -3,18 +3,21 @@ from __future__ import division
 import numpy as np
 from matplotlib import pyplot as plt
 
-def autoamta_sim(word_length, alphabet_size):
+def autoamta_sim(word_length, marble_cap):
     """Simulate the automata growth and return size at each level"""
     curr_sizes = [1, 2]
-    for _ in range(word_length - 2):
+    marbles = []
+    for _ in range(word_length):
+        new_marble = 0
+        while new_marble == 0:
+            new_marble = np.random.binomial(marble_cap, 0.5, 1)[0]
+        marbles.append(new_marble)
+    for i in range(word_length - 2):
         curr_sizes.append(curr_sizes[-1] + k_sim(curr_sizes[-1],
-            alphabet_size * (curr_sizes[-1] - curr_sizes[-2])))
-    return curr_sizes
+            marbles[i + 2] * (curr_sizes[-1] - curr_sizes[-2])))
+    return curr_sizes, marbles
 
-def k_sim(bins, marble_cap):
-    marbles = 0
-    while marbles == 0:
-        marbles = np.random.binomial(marble_cap, 0.5, 1)[0]
+def k_sim(bins, marbles):
     simulated = np.random.multinomial(marbles, [1 / float(bins)] * bins)
     num_full = 0
     for urn in simulated:
@@ -36,10 +39,10 @@ def failure_trials(trials, string_length, alphabet_size):
     """Count the number of failures calculated for each trial."""
     data = []
     for _ in range(trials):
-        data.append(autoamta_sim(string_length, alphabet_size)[-2]
-                * alphabet_size)
+        level_sizes, marbles = autoamta_sim(string_length, alphabet_size)
+        data.append(level_sizes[-2] * marbles[-2])
     return data
 
 if __name__ == '__main__':
-    for word_length in range(5, 10):
+    for word_length in range(5, 15):
         make_hist(failure_trials(10000, word_length, 4), word_length, 4)
