@@ -125,7 +125,9 @@ def construct_dfa(string, alphabet):
                 # level (i.e. in the queue).
                 is_new = True
                 for added_state in queue:
-                    if added_state == new_state:
+                    if (added_state.level == new_state.level
+                        and added_state.fallback.unique_id
+                        == new_state.fallback.unique_id):
                         new_state = added_state
                         is_new = False
                         break

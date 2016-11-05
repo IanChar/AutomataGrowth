@@ -219,4 +219,7 @@ def plot_trends(length_range, trials):
 
 
 if __name__ == '__main__':
-    plot_trends((3, 10), 10000)
+    root = aho_construction.construct_dfa([['A', 'G'], ['T'], ['A', 'T'], ['A', 'C', 'G', 'T'], ['A', 'G']], ['A', 'C', 'G', 'T'])
+    aho_construction.print_dfa(root)
+    # print aho_to_dfa(root, 5)
+    # plot_trends((3, 10), 10000)

@@ -193,6 +193,4 @@ def _find_possible_transitions(curr_state, compare_str, string_codes):
 
 
 if __name__ == '__main__':
-    print subset_construction([['C', 'T'], ['A', 'G'], ['G', 'C']])
-    print binary_subset_construction([['C', 'T'], ['A', 'G'], ['G', 'C']])
-    print intersection_construction([['C', 'T'], ['A', 'G'], ['G', 'C']])
+    print binary_subset_construction([['A', 'G'], ['T'], ['A', 'T'], ['A', 'C', 'G', 'T'], ['A', 'G']])
