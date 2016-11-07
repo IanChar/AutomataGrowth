@@ -2,8 +2,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from collections import deque
+import sys
 
-from automata import Automata
+sys.path.append('./..')
 import aho_construction
 import time_compare
 

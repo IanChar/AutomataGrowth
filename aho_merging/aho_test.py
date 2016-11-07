@@ -2,7 +2,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from collections import deque
+import sys
 
+sys.path.append('./..')
+sys.path.append('./../automata')
 from automata import Automata
 import aho_construction
 import single_dfa_construction

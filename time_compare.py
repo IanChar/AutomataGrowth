@@ -3,7 +3,10 @@
 import time
 import random
 import matplotlib.pyplot as plt
+import sys
 
+sys.path.append('./automata')
+sys.path.append('./aho_merging')
 import single_dfa_construction
 import aho_construction
 
