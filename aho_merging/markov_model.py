@@ -44,5 +44,5 @@ def failure_trials(trials, string_length, alphabet_size):
     return data
 
 if __name__ == '__main__':
-    for word_length in range(5, 15):
+    for word_length in range(5, 10):
         make_hist(failure_trials(10000, word_length, 4), word_length, 4)
