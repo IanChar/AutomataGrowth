@@ -1,4 +1,5 @@
 """Code to test aho_construction against subset construction."""
+from __future__ import division
 import matplotlib.pyplot as plt
 from collections import deque
 from random import random
@@ -11,14 +12,18 @@ import time_compare
 
 ALPHABET = ['A', 'C', 'G', 'T']
 
-def deduce_path_lengths(string, alphabet, return_lvl_size=False):
+def deduce_path_lengths(string, alphabet, return_lvl_size=False,
+        as_ratios=False):
     """Finds the number of nodes used in fallback paths
 
     Args:
         string: The generalized string to compare.
         alphabet: The alphabet of the string.
+        return_lvl_size: Whether to return the size of each level as well.
+        as_ratios: Whether to return infromation as ratio of nodes used in path
+                over the number of total nodes up to that point.
     Returns:
-        Integer of how many failure computations were made.
+        List of the number of nodes used in fallback (or ratios if flag given).
     """
     root = aho_construction.construct_dfa(string, alphabet)
     # Structure sorting the states to the level number.
@@ -50,6 +55,13 @@ def deduce_path_lengths(string, alphabet, return_lvl_size=False):
                 seen.append(nxt_node.unique_id)
                 nxt_node = nxt_node.fallback
         num_failure_path[lvl] = len(seen)
+    if as_ratios:
+        for lvl in range(len(num_failure_path)):
+            total_nodes = 0
+            for ancestor_lvl in range(lvl + 1):
+                total_nodes += len(level_ptrs[ancestor_lvl])
+            if total_nodes > 0:
+                num_failure_path[lvl] /= total_nodes
     if return_lvl_size:
         return num_failure_path, [len(level_ptrs[i])
                                   for i in range(len(string) + 1)]
@@ -164,9 +176,34 @@ def plot_comparison(avg_path, avg_sim_path, string_len, trials):
     plt.legend([sim, markov])
     plt.show()
 
+"""Main functions"""
+
+def analyze_path_model(string_length, trials, merge_prob):
+    """Generate data from algorithm and model and compare.
+
+    Args:
+        string_length: Name of the string to look at.
+        trials: Number of trials to perform.
+        merge_prob: Probability that the failure will be merged in the chain.
+    """
+    avg_path, avg_sim_path = eval_markov(string_length, trials, merge_prob)
+    plot_comparison(avg_path, avg_sim_path, string_length, trials)
+
+def get_ratio_trends(string_length, trials):
+    """Get the trend of the ratio of amount of path used to total nodes.
+
+    Args:
+        string_length: Length of the string to analyze.
+        trials: The number of trials to perform.
+    """
+    results = [0 for _ in range(string_length + 1)]
+    for _ in xrange(trials):
+        rand_string = time_compare.build_random_string(string_length)
+        ratios = deduce_path_lengths(rand_string, ALPHABET, as_ratios=True)
+        for lvl, ratio in enumerate(ratios):
+            results[lvl] += ratio
+    return [total / trials for total in results]
+
 
 if __name__ == '__main__':
-    avg_path, avg_sim_path = eval_markov(10, 1000, 0.75)
-    plot_comparison(avg_path, avg_sim_path, 10, 1000)
-    # plot_growth_rate(sim_path_growth(10000, 20), 20,
-    #         'Average Path Growth: String Length 20, Trials 10000')
+    print get_ratio_trends(30, 100)
