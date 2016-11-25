@@ -1,8 +1,16 @@
 """Perform analysis on the clash number distribution."""
 
+from __future__ import division
 from collections import deque
+from matplotlib import pyplot as plt
+import sys
 
+sys.path.append('./..')
+sys.path.append('./../automata')
 import aho_construction
+import time_compare
+
+ALPHABET = ['A', 'C', 'G', 'T']
 
 def get_clashes(root):
     """Get the clash numbers for all nodes in the DFA.
@@ -49,6 +57,82 @@ def get_clashes(root):
         to_return.append(full_clash)
     return to_return
 
+def get_expected_vals(trials, string_length):
+    """Find the expected value of 1/clash and number of nodes for each level.
+
+    Args:
+        trials: The number of trials to perform.
+        string_length: The length of the strings to look at.
+    Returns:
+        A list of tulples (expected 1/clash, expected nodes) for each level.
+    """
+    running_sum = [0 for _ in range(string_length)]
+    num_expanded = [0 for _ in range(string_length)]
+    # Sum up all of the 1/clash values
+    for _ in xrange(trials):
+        rand_string = time_compare.build_random_string(string_length)
+        root = aho_construction.construct_dfa(rand_string, ALPHABET)
+        clashes = get_clashes(root)
+        for lvl, vals in enumerate(clashes):
+            for val in vals:
+                running_sum[lvl] += 1 / val
+            num_expanded[lvl] += len(vals)
+    # Find the sample means
+    to_return = []
+    for lvl, accum in enumerate(running_sum):
+        to_return.append((accum / num_expanded[lvl], accum / trials))
+    return to_return
+
+def sim_next_size(expected_vals):
+    """Calculate the expected next level size from previous information.
+
+    Args:
+        expected_vals: Expected data as a list of tuples
+            (expected 1/clash, expected nodes) for each level.
+    Returns:
+        A list of the calculated level size based on the above information.
+    """
+    # 0 for first index because we have no informatino for the first level
+    calcd = [0]
+    growth_coef = len(ALPHABET) / (2 * (1 - (1 / 2) ** len(ALPHABET)))
+    for lvl in range(len(expected_vals) - 1):
+        calcd.append(expected_vals[lvl + 1][0] * growth_coef
+            * expected_vals[lvl][1])
+    return calcd
+
+def plot_comparison(true_vals, predicted_vals, string_len, trials):
+    """Plot the two expected values side-by-side.
+
+    Args:
+        true_vals: The sample mean of number of nodes in level n.
+        predicted_vals: The predicted number of nodes in level n.
+        string_len: The length of the string that was looked at.
+        trials: The number of trials performed.
+    """
+    # Plot the two together on the same plot.
+    true, = plt.plot(range(string_len), true_vals, 'bo',
+            label='True Values')
+    pred, = plt.plot(range(string_len), predicted_vals, 'ro',
+            label='Predicted Values')
+    plt.xlabel('Level')
+    plt.ylabel('Number of nodes in Level')
+    plt.title('Comparison of True and Predicted Number of Nodes in Level, '
+            '%d trials, %d length string' % (trials, string_len))
+    plt.grid(True)
+    plt.legend([true, pred])
+    plt.show()
+
+def run_analysis(trials, string_length):
+    """Run analysis between truth and predicted for nodes in level.
+
+    Args:
+        trials: Number of trials to perform.
+        string_len: The length of the string to consider.
+    """
+    data = get_expected_vals(trials, string_length)
+    predicted = sim_next_size(data)
+    level_sizes = [lvl[1] for lvl in data]
+    plot_comparison(level_sizes, predicted, string_length, trials)
+
 if __name__ == '__main__':
-    print get_clashes(aho_construction.construct_dfa([['A', 'T'], ['A', 'T'],
-            ['A', 'G'], ['A', 'C', 'T']], ['A', 'C', 'G', 'T']))
+    run_analysis(10000, 10)
