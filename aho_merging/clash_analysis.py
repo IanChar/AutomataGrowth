@@ -9,6 +9,7 @@ sys.path.append('./..')
 sys.path.append('./../automata')
 import aho_construction
 import time_compare
+import aho_test
 
 ALPHABET = ['A', 'C', 'G', 'T']
 
@@ -134,5 +135,28 @@ def run_analysis(trials, string_length):
     level_sizes = [lvl[1] for lvl in data]
     plot_comparison(level_sizes, predicted, string_length, trials)
 
+def plot_clash_hist(trials, string_length):
+    """Plot histograms of clash numbers for each level.
+
+    Args:
+        trials: Number of trials to perform.
+        string_length: The length of the string to consider.
+    """
+    # Gather the data.
+    data = [[] for _ in range(string_length)]
+    for _ in xrange(trials):
+        rand_string = time_compare.build_random_string(string_length)
+        root = aho_construction.construct_dfa(rand_string, ALPHABET)
+        clashes = get_clashes(root)
+        for lvl, clash_data in enumerate(clashes):
+            data[lvl] += clash_data
+
+    # Histogram the data.
+    for lvl, lvl_data in enumerate(data):
+        aho_test.analyze_data(lvl_data, make_histogram=True,
+            title=' '.join(['Clashes for Level', str(lvl + 1), 'Samples:',
+            str(len(lvl_data))]))
+
+
 if __name__ == '__main__':
-    run_analysis(10000, 10)
+    plot_clash_hist(10000, 10)
