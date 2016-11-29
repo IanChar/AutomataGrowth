@@ -58,6 +58,31 @@ def get_clashes(root):
         to_return.append(full_clash)
     return to_return
 
+def get_level_sizes(root, string_length):
+    """Get the sizes of the levels.
+
+    Args:
+        root: The root to the automaton.
+        string_length: The length of the string being analyzed.
+    Returns:
+        List of the sizes of the levels starting from level 1 rather than 0.
+    """
+    queue = deque()
+    seen = {}
+    lvl_sizes = [0 for _ in range(string_length)]
+
+    queue.appendleft(root)
+    seen[root.unique_id] = True
+    while len(queue) > 0:
+        curr_node = queue.pop()
+        # Add children and add to lvl_sizes
+        for _, child in curr_node.transitions.iteritems():
+            if child.unique_id not in seen:
+                lvl_sizes[child.level - 1] += 1
+                seen[child.unique_id] = True
+                queue.appendleft(child)
+    return lvl_sizes
+
 def get_expected_vals(trials, string_length):
     """Find the expected value of 1/clash and number of nodes for each level.
 
@@ -178,12 +203,7 @@ def get_level_size_ratio(trials, string_length):
         # Get the clash numbers.
         rand_string = time_compare.build_random_string(string_length)
         root = aho_construction.construct_dfa(rand_string, ALPHABET)
-        clashes = get_clashes(root)
-        # Get the level sizes
-        level_sizes = [0 for _ in range(string_length)]
-        for lvl, lvl_clashes in enumerate(clashes):
-            for clash in lvl_clashes:
-                level_sizes[lvl] += 1 / clash
+        level_sizes = get_level_sizes(root, string_length)
         # Add the ratio of the level sizes.
         for lvl in range(string_length - 1):
             ratios[lvl] += level_sizes[lvl + 1] / level_sizes[lvl]
@@ -223,6 +243,25 @@ def get_total_size_ratio(trials, string_length):
         ratios[lvl] /= trials
     return ratios
 
+def automaton_growth_ratio(string_length):
+    """Find the growth ratios for the size of the automaton.
+
+    Args:
+        string_length: The length of the string to analyze.
+    Returns:
+        List of ratios where each is the new size over the old size.
+    """
+    # Get a random string of the size and get the clash numbers.
+    rand_string = time_compare.build_random_string(string_length)
+    root = aho_construction.construct_dfa(rand_string, ALPHABET)
+    lvl_sizes = get_level_sizes(root, string_length)
+
+    curr_size = 0
+    ratios = []
+    for last_lvl in range(len(lvl_sizes) - 1):
+        curr_size += lvl_sizes[last_lvl]
+        ratios.append((curr_size + lvl_sizes[last_lvl + 1]) / curr_size)
+    return ratios
 
 if __name__ == '__main__':
-    print plot_clash_hist(10000, 10)
+    print automaton_growth_ratio(150)[-5:]
