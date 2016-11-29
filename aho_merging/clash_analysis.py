@@ -123,17 +123,24 @@ def plot_comparison(true_vals, predicted_vals, string_len, trials):
     plt.legend([true, pred])
     plt.show()
 
-def run_analysis(trials, string_length):
+def run_analysis(trials, string_length, make_hists=False):
     """Run analysis between truth and predicted for nodes in level.
 
     Args:
         trials: Number of trials to perform.
         string_len: The length of the string to consider.
+    Returns:
+        List of differences.
     """
     data = get_expected_vals(trials, string_length)
     predicted = sim_next_size(data)
     level_sizes = [lvl[1] for lvl in data]
-    plot_comparison(level_sizes, predicted, string_length, trials)
+    if make_hists:
+        plot_comparison(level_sizes, predicted, string_length, trials)
+    differences = []
+    for lvl in range(len(level_sizes)):
+        differences.append(level_sizes[lvl] - predicted[lvl])
+    return differences
 
 def plot_clash_hist(trials, string_length):
     """Plot histograms of clash numbers for each level.
@@ -149,7 +156,7 @@ def plot_clash_hist(trials, string_length):
         root = aho_construction.construct_dfa(rand_string, ALPHABET)
         clashes = get_clashes(root)
         for lvl, clash_data in enumerate(clashes):
-            data[lvl] += clash_data
+            data[lvl].append(clash_data[0])
 
     # Histogram the data.
     for lvl, lvl_data in enumerate(data):
@@ -157,6 +164,65 @@ def plot_clash_hist(trials, string_length):
             title=' '.join(['Clashes for Level', str(lvl + 1), 'Samples:',
             str(len(lvl_data))]))
 
+def get_level_size_ratio(trials, string_length):
+    """Gets the ratio between the size of levels.
+
+    Args:
+        trials: Number of trials to perform.
+        string_length: The length of the string to consider.
+    Returns:
+        A list of the average ratios between the levels.
+    """
+    ratios = [0 for _ in range(string_length - 1)]
+    for _ in xrange(trials):
+        # Get the clash numbers.
+        rand_string = time_compare.build_random_string(string_length)
+        root = aho_construction.construct_dfa(rand_string, ALPHABET)
+        clashes = get_clashes(root)
+        # Get the level sizes
+        level_sizes = [0 for _ in range(string_length)]
+        for lvl, lvl_clashes in enumerate(clashes):
+            for clash in lvl_clashes:
+                level_sizes[lvl] += 1 / clash
+        # Add the ratio of the level sizes.
+        for lvl in range(string_length - 1):
+            ratios[lvl] += level_sizes[lvl + 1] / level_sizes[lvl]
+    # Get average of the ratios
+    for lvl in range(string_length - 1):
+        ratios[lvl] /= trials
+    return ratios
+
+def get_total_size_ratio(trials, string_length):
+    """Gets the ratio between the size of levels.
+
+    Args:
+        trials: Number of trials to perform.
+        string_length: The length of the string to consider.
+    Returns:
+        A list of the average ratios for total size between the levels.
+    """
+    ratios = [0 for _ in range(string_length - 1)]
+    for _ in xrange(trials):
+        # Get the clash numbers.
+        rand_string = time_compare.build_random_string(string_length)
+        root = aho_construction.construct_dfa(rand_string, ALPHABET)
+        clashes = get_clashes(root)
+        # Get the total sizes
+        total_sizes = [0 for _ in range(string_length)]
+        for lvl, lvl_clashes in enumerate(clashes):
+            for clash in lvl_clashes:
+                total_sizes[lvl] += 1 / clash
+        for lvl in range(len(total_sizes))[::-1]:
+            for prev_lvl in range(lvl):
+                total_sizes[lvl] += total_sizes[prev_lvl]
+        # Add the ratio of the total sizes.
+        for lvl in range(string_length - 1):
+            ratios[lvl] += total_sizes[lvl + 1] / total_sizes[lvl]
+    # Get average of the ratios
+    for lvl in range(string_length - 1):
+        ratios[lvl] /= trials
+    return ratios
+
 
 if __name__ == '__main__':
-    plot_clash_hist(10000, 10)
+    print plot_clash_hist(10000, 10)
