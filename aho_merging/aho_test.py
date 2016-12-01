@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from collections import deque
 import sys
+import random
 
 sys.path.append('./..')
 sys.path.append('./../automata')
@@ -10,6 +11,28 @@ from automata import Automata
 import aho_construction
 import single_dfa_construction
 import time_compare
+
+def build_random_string(length, alphabet):
+    """Build a random string to use.
+
+    Args:
+        length: The length of the string to construct.
+        alphabet: The alphabet to use in the string construction
+    Returns:
+        The generalized random string.
+    """
+    random_string = []
+    for _ in range(length):
+        rand_code = random.randint(0,
+                                   2 ** len(alphabet)
+                                   - 2) + 1
+        rand_letters = []
+        for digit in range(len(alphabet)):
+            if rand_code & (1 << digit) > 0:
+                rand_letters.append(alphabet[digit])
+        random_string.append(rand_letters)
+    return random_string
+
 
 def aho_to_dfa(root_node, string_len):
     """Converts dfa in aho data structure into Automata data structure.

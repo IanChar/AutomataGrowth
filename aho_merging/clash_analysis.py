@@ -3,15 +3,21 @@
 from __future__ import division
 from collections import deque
 from matplotlib import pyplot as plt
-import sys
 
-sys.path.append('./..')
-sys.path.append('./../automata')
 import aho_construction
-import time_compare
 import aho_test
 
-ALPHABET = ['A', 'C', 'G', 'T']
+DNA_ALPH = ['A', 'C', 'G', 'T']
+
+def create_alphabet(size):
+    """Creates arbitrary alphabet to use of specified size.
+
+    Args:
+        size: The size of the alphabet.
+    Returns:
+        An alphabet represented as a list of letters.
+    """
+    return [chr(ordinal) for ordinal in range(65, 65 + size)]
 
 def get_clashes(root):
     """Get the clash numbers for all nodes in the DFA.
@@ -83,13 +89,14 @@ def get_level_sizes(root, string_length):
                 queue.appendleft(child)
     return lvl_sizes
 
-def get_expected_vals(trials, string_length):
+def get_expected_vals(trials, string_length, alphabet):
     """Find the expected value of 1/clash and number of nodes for each level.
     (E[1/T_1,n], E[W_n])
 
     Args:
         trials: The number of trials to perform.
         string_length: The length of the strings to look at.
+        alphabet: The alphabet to use for string construction.
     Returns:
         A list of tulples (expected 1/clash, expected nodes) for each level.
     """
@@ -97,8 +104,8 @@ def get_expected_vals(trials, string_length):
     num_expanded = [0 for _ in range(string_length)]
     # Sum up all of the 1/clash values
     for _ in xrange(trials):
-        rand_string = time_compare.build_random_string(string_length)
-        root = aho_construction.construct_dfa(rand_string, ALPHABET)
+        rand_string = aho_test.build_random_string(string_length, alphabet)
+        root = aho_construction.construct_dfa(rand_string, alphabet)
         clashes = get_clashes(root)
         for lvl, vals in enumerate(clashes):
             for val in vals:
@@ -110,7 +117,7 @@ def get_expected_vals(trials, string_length):
         to_return.append((accum / num_expanded[lvl], accum / trials))
     return to_return
 
-def sim_next_size(expected_vals):
+def sim_next_size(expected_vals, alphabet):
     """Calculate the expected next level size from previous information.
 
     Args:
@@ -121,7 +128,7 @@ def sim_next_size(expected_vals):
     """
     # 0 for first index because we have no informatino for the first level
     calcd = [0]
-    growth_coef = len(ALPHABET) / (2 * (1 - (1 / 2) ** len(ALPHABET)))
+    growth_coef = len(alphabet) / (2 * (1 - (1 / 2) ** len(alphabet)))
     for lvl in range(len(expected_vals) - 1):
         calcd.append(expected_vals[lvl + 1][0] * growth_coef
             * expected_vals[lvl][1])
@@ -149,17 +156,19 @@ def plot_comparison(true_vals, predicted_vals, string_len, trials):
     plt.legend([true, pred])
     plt.show()
 
-def run_analysis(trials, string_length, make_hists=False):
+def run_analysis(trials, string_length, alphabet, make_hists=False):
     """Run analysis between truth and predicted for nodes in level.
 
     Args:
         trials: Number of trials to perform.
         string_len: The length of the string to consider.
+        alphabet: The alphabet to use for string construction.
+        make_hists: Whether to plot histograms.
     Returns:
         List of differences.
     """
-    data = get_expected_vals(trials, string_length)
-    predicted = sim_next_size(data)
+    data = get_expected_vals(trials, string_length, alphabet)
+    predicted = sim_next_size(data, alphabet)
     level_sizes = [lvl[1] for lvl in data]
     if make_hists:
         plot_comparison(level_sizes, predicted, string_length, trials)
@@ -168,18 +177,19 @@ def run_analysis(trials, string_length, make_hists=False):
         differences.append(level_sizes[lvl] - predicted[lvl])
     return differences
 
-def plot_clash_hist(trials, string_length):
+def plot_clash_hist(trials, string_length, alphabet):
     """Plot histograms of clash numbers for each level.
 
     Args:
         trials: Number of trials to perform.
         string_length: The length of the string to consider.
+        alphabet: The alphabet to use in string construction.
     """
     # Gather the data.
     data = [[] for _ in range(string_length)]
     for _ in xrange(trials):
-        rand_string = time_compare.build_random_string(string_length)
-        root = aho_construction.construct_dfa(rand_string, ALPHABET)
+        rand_string = aho_test.build_random_string(string_length, alphabet)
+        root = aho_construction.construct_dfa(rand_string, alphabet)
         clashes = get_clashes(root)
         for lvl, clash_data in enumerate(clashes):
             data[lvl].append(clash_data[0])
@@ -190,20 +200,21 @@ def plot_clash_hist(trials, string_length):
             title=' '.join(['Clashes for Level', str(lvl + 1), 'Samples:',
             str(len(lvl_data))]))
 
-def get_level_size_ratio(trials, string_length):
+def get_level_size_ratio(trials, string_length, alphabet):
     """Gets the ratio between the size of levels.
 
     Args:
         trials: Number of trials to perform.
         string_length: The length of the string to consider.
+        alphabet: The alphabet to use for string construction.
     Returns:
         A list of the average ratios between the levels.
     """
     ratios = [0 for _ in range(string_length - 1)]
     for _ in xrange(trials):
         # Get the clash numbers.
-        rand_string = time_compare.build_random_string(string_length)
-        root = aho_construction.construct_dfa(rand_string, ALPHABET)
+        rand_string = aho_test.build_random_string(string_length, alphabet)
+        root = aho_construction.construct_dfa(rand_string, alphabet)
         level_sizes = get_level_sizes(root, string_length)
         # Add the ratio of the level sizes.
         for lvl in range(string_length - 1):
@@ -213,20 +224,21 @@ def get_level_size_ratio(trials, string_length):
         ratios[lvl] /= trials
     return ratios
 
-def get_total_size_ratio(trials, string_length):
+def get_total_size_ratio(trials, string_length, alphabet):
     """Gets the ratio between the size of levels. E[X_n+1/X_n]
 
     Args:
         trials: Number of trials to perform.
         string_length: The length of the string to consider.
+        alphabet: The alphabet to use for string construction.
     Returns:
         A list of the average ratios for total size between the levels.
     """
     ratios = [0 for _ in range(string_length - 1)]
     for _ in xrange(trials):
         # Get the clash numbers.
-        rand_string = time_compare.build_random_string(string_length)
-        root = aho_construction.construct_dfa(rand_string, ALPHABET)
+        rand_string = aho_test.build_random_string(string_length, alphabet)
+        root = aho_construction.construct_dfa(rand_string, alphabet)
         clashes = get_clashes(root)
         # Get the total sizes
         total_sizes = [0 for _ in range(string_length)]
@@ -244,20 +256,21 @@ def get_total_size_ratio(trials, string_length):
         ratios[lvl] /= trials
     return ratios
 
-def get_average_dfa_size(trials, string_length):
+def get_average_dfa_size(trials, string_length, alphabet):
     """Gets the average size of automaton E[X_n]
 
     Args:
         trials: Number of trials to perform.
         string_length: The length of the string to consider.
+        alphabet: The alphabet to use for string construction.
     Returns:
         A list of the dfa sizes by increasing level.
     """
     sizes = [0 for _ in range(string_length)]
     for _ in xrange(trials):
         # Get a random string and get the size of each level.
-        rand_string = time_compare.build_random_string(string_length)
-        root = aho_construction.construct_dfa(rand_string, ALPHABET)
+        rand_string = aho_test.build_random_string(string_length, alphabet)
+        root = aho_construction.construct_dfa(rand_string, alphabet)
         lvl_sizes = get_level_sizes(root, string_length)
         # Add the sizes to our list
         curr_size = 1
@@ -270,16 +283,17 @@ def get_average_dfa_size(trials, string_length):
 
     return sizes
 
-def get_dfa_growth_of_expected(trials, string_length):
+def get_dfa_growth_of_expected(trials, string_length, alphabet):
     """Gets the growth of the expected size E[X_n+1]/E[X_n]
 
     Args:
         trials: Number of trials to perform.
         string_length: The length of the string to consider.
+        alphabet: The alphabet to use for string construction.
     Returns:
         A list of the growths by increasing level.
     """
-    sizes = get_average_dfa_size(trials, string_length)
+    sizes = get_average_dfa_size(trials, string_length, alphabet)
     # Compute the ratios.
     ratios = []
     for lvl in range(len(sizes) - 1):
@@ -295,8 +309,8 @@ def automaton_growth_ratio(string_length):
         List of ratios where each is the new size over the old size.
     """
     # Get a random string of the size and get the clash numbers.
-    rand_string = time_compare.build_random_string(string_length)
-    root = aho_construction.construct_dfa(rand_string, ALPHABET)
+    rand_string = aho_test.build_random_string(string_length, DNA_ALPH)
+    root = aho_construction.construct_dfa(rand_string, DNA_ALPH)
     lvl_sizes = get_level_sizes(root, string_length)
 
     curr_size = 0
@@ -320,8 +334,8 @@ def plot_conditioned_clash(clash_level, prev_sizes, samples):
     # Continuously loop until we have enough data.
     running = True
     while running:
-        rand_string = time_compare.build_random_string(clash_level)
-        root = aho_construction.construct_dfa(rand_string, ALPHABET)
+        rand_string = aho_test.build_random_string(clash_level, DNA_ALPH)
+        root = aho_construction.construct_dfa(rand_string, DNA_ALPH)
         lvl_sizes = get_level_sizes(root, clash_level)
         # Check if we need anymore samples
         if seen_amount[lvl_sizes[-2]] < samples:
@@ -339,4 +353,4 @@ def plot_conditioned_clash(clash_level, prev_sizes, samples):
     return clash_data
 
 if __name__ == '__main__':
-    print get_expected_vals(1000, 60)
+    print get_expected_vals(1000, 20, create_alphabet(10))
