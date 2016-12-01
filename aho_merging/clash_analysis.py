@@ -85,6 +85,7 @@ def get_level_sizes(root, string_length):
 
 def get_expected_vals(trials, string_length):
     """Find the expected value of 1/clash and number of nodes for each level.
+    (E[1/T_1,n], E[W_n])
 
     Args:
         trials: The number of trials to perform.
@@ -213,7 +214,7 @@ def get_level_size_ratio(trials, string_length):
     return ratios
 
 def get_total_size_ratio(trials, string_length):
-    """Gets the ratio between the size of levels.
+    """Gets the ratio between the size of levels. E[X_n+1/X_n]
 
     Args:
         trials: Number of trials to perform.
@@ -243,8 +244,50 @@ def get_total_size_ratio(trials, string_length):
         ratios[lvl] /= trials
     return ratios
 
+def get_average_dfa_size(trials, string_length):
+    """Gets the average size of automaton E[X_n]
+
+    Args:
+        trials: Number of trials to perform.
+        string_length: The length of the string to consider.
+    Returns:
+        A list of the dfa sizes by increasing level.
+    """
+    sizes = [0 for _ in range(string_length)]
+    for _ in xrange(trials):
+        # Get a random string and get the size of each level.
+        rand_string = time_compare.build_random_string(string_length)
+        root = aho_construction.construct_dfa(rand_string, ALPHABET)
+        lvl_sizes = get_level_sizes(root, string_length)
+        # Add the sizes to our list
+        curr_size = 1
+        for lvl, lvl_size in enumerate(lvl_sizes):
+            curr_size += lvl_size
+            sizes[lvl] = curr_size
+    # Get the sample mean for level size.
+    for lvl in range(string_length):
+        sizes[lvl] /= trials
+
+    return sizes
+
+def get_dfa_growth_of_expected(trials, string_length):
+    """Gets the growth of the expected size E[X_n+1]/E[X_n]
+
+    Args:
+        trials: Number of trials to perform.
+        string_length: The length of the string to consider.
+    Returns:
+        A list of the growths by increasing level.
+    """
+    sizes = get_average_dfa_size(trials, string_length)
+    # Compute the ratios.
+    ratios = []
+    for lvl in range(len(sizes) - 1):
+        ratios.append(sizes[lvl + 1] / sizes[lvl])
+    return ratios
+
 def automaton_growth_ratio(string_length):
-    """Find the growth ratios for the size of the automaton.
+    """Find the growth ratios for the size of the automaton. X_n+1/X_n
 
     Args:
         string_length: The length of the string to analyze.
@@ -263,5 +306,37 @@ def automaton_growth_ratio(string_length):
         ratios.append((curr_size + lvl_sizes[last_lvl + 1]) / curr_size)
     return ratios
 
+def plot_conditioned_clash(clash_level, prev_sizes, samples):
+    """Get the clash distribution given that the last level was a specific size.
+
+    Args:
+        clash_level: The level at which to analyze the clash distributions.
+        prev_sizes: The sizes of the previous level to consider.
+        samples: The number of samples that each conditioned value should have.
+    """
+    seen_amount = {size: 0 for size in prev_sizes}
+    clash_data = {size: [] for size in prev_sizes}
+
+    # Continuously loop until we have enough data.
+    running = True
+    while running:
+        rand_string = time_compare.build_random_string(clash_level)
+        root = aho_construction.construct_dfa(rand_string, ALPHABET)
+        lvl_sizes = get_level_sizes(root, clash_level)
+        # Check if we need anymore samples
+        if seen_amount[lvl_sizes[-2]] < samples:
+            seen_amount[lvl_sizes[-2]] += 1
+            # Compute the clashes and add just the first clash number.
+            clashes = get_clashes(root)
+            clash_data[lvl_sizes[-2]].append(clashes[-1][0])
+        # See if we need to continue to run.
+        running = False
+        for amount in seen_amount.values():
+            if amount < samples:
+                running = True
+                break
+
+    return clash_data
+
 if __name__ == '__main__':
-    print automaton_growth_ratio(150)[-5:]
+    print get_expected_vals(1000, 60)
