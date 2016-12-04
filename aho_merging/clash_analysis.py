@@ -3,6 +3,7 @@
 from __future__ import division
 from collections import deque
 from matplotlib import pyplot as plt
+import numpy as np
 
 import aho_construction
 import aho_test
@@ -300,17 +301,18 @@ def get_dfa_growth_of_expected(trials, string_length, alphabet):
         ratios.append(sizes[lvl + 1] / sizes[lvl])
     return ratios
 
-def automaton_growth_ratio(string_length):
+def automaton_growth_ratio(string_length, alphabet):
     """Find the growth ratios for the size of the automaton. X_n+1/X_n
 
     Args:
         string_length: The length of the string to analyze.
+        alphabet: Size of the alphabet to use for construction.
     Returns:
         List of ratios where each is the new size over the old size.
     """
     # Get a random string of the size and get the clash numbers.
-    rand_string = aho_test.build_random_string(string_length, DNA_ALPH)
-    root = aho_construction.construct_dfa(rand_string, DNA_ALPH)
+    rand_string = aho_test.build_random_string(string_length, alphabet)
+    root = aho_construction.construct_dfa(rand_string, alphabet)
     lvl_sizes = get_level_sizes(root, string_length)
 
     curr_size = 0
@@ -320,13 +322,14 @@ def automaton_growth_ratio(string_length):
         ratios.append((curr_size + lvl_sizes[last_lvl + 1]) / curr_size)
     return ratios
 
-def plot_conditioned_clash(clash_level, prev_sizes, samples):
+def plot_conditioned_clash(clash_level, prev_sizes, samples, alphabet):
     """Get the clash distribution given that the last level was a specific size.
 
     Args:
         clash_level: The level at which to analyze the clash distributions.
         prev_sizes: The sizes of the previous level to consider.
         samples: The number of samples that each conditioned value should have.
+        alphabet: Size of the alphabet to use for construction.
     """
     seen_amount = {size: 0 for size in prev_sizes}
     clash_data = {size: [] for size in prev_sizes}
@@ -334,8 +337,8 @@ def plot_conditioned_clash(clash_level, prev_sizes, samples):
     # Continuously loop until we have enough data.
     running = True
     while running:
-        rand_string = aho_test.build_random_string(clash_level, DNA_ALPH)
-        root = aho_construction.construct_dfa(rand_string, DNA_ALPH)
+        rand_string = aho_test.build_random_string(clash_level, alphabet)
+        root = aho_construction.construct_dfa(rand_string, alphabet)
         lvl_sizes = get_level_sizes(root, clash_level)
         # Check if we need anymore samples
         if seen_amount[lvl_sizes[-2]] < samples:
@@ -350,7 +353,41 @@ def plot_conditioned_clash(clash_level, prev_sizes, samples):
                 running = True
                 break
 
+    # Plot each of the conditioned.
+    for conditioned_size, data in clash_data.iteritems():
+        max_clash = max(data)
+        _, _, _ = plt.hist(data)
+        plt.xlabel('Clash Number')
+        plt.xlim((1, max_clash + 1))
+        plt.ylabel('Frequency')
+        plt.title('Clash Number at Level ' + str(clash_level)
+                  + '; Last level Size: ' + str(conditioned_size)
+                  + '; Samples: ' + str(samples))
+        plt.grid(True)
+        plt.show()
     return clash_data
 
+def compare_expected_growths(trials, string_length, alphabet_range):
+    """Compare the simulated growth rate E[X_n+1]/E[X_n] w/ expected.
+
+    Args:
+        string_length: The maximum length to check.
+        trials: The number of trials to perform.
+        alphabet_range: The range of the alphabet lengths to use as a list.
+    Returns:
+        List of tuples (simulated, predicted, (predicted - simulated)/simulated)
+    """
+    results = []
+    for alph in [create_alphabet(alph_size) for alph_size in alphabet_range]:
+        # Get what we need for prediction.
+        expected_split = len(alph) / (2 * (1 - (1 / 2) ** len(alph)))
+        asym_inv_clash = get_expected_vals(trials, string_length, alph)[-1][0]
+        predicted = expected_split * asym_inv_clash
+        # Get the simulated value.
+        sim = get_dfa_growth_of_expected(trials, string_length, alph)[-1]
+        # Add information to the results.
+        results.append((sim, predicted, (predicted - sim) / sim))
+    return results
+
 if __name__ == '__main__':
-    print get_expected_vals(1000, 20, create_alphabet(10))
+    plot_conditioned_clash(4, range(1, 5), 10000, DNA_ALPH)
