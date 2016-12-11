@@ -244,17 +244,46 @@ def plot_lvlsize_trend(trials, string_length, alphabet):
     averages = [np.average(lvl_data) for lvl_data in data]
     stddev = [np.std(lvl_data) for lvl_data in data]
 
-    # Plot the data as a trent.
+    # Plot the data as a trend.
     plt.errorbar(range(1, string_length + 1), averages, yerr=stddev)
     plt.title('Average Level Size vs Level; Trials: ' + str(trials)
               + '; Alphabet: ' + str(len(alphabet)))
     plt.xlabel('Level')
     plt.ylabel('Level Size')
-    plt.yticks(np.arange(-5, 20, 1.0))
-    plt.ylim((-5, 20))
     plt.grid(True)
     plt.show()
 
+def plot_asym_lvlsize(alphabet_range, trials, level=40):
+    """Plot the asymptotic level size with respect to alphabet size.
+
+    Args:
+        alphabet_range: The sizes of the alphabet to test.
+        trials: The number of trials to run for each alphabet.
+        level: The level at which we measure/call "asymptotic"
+    """
+    averages = []
+    stddevs = []
+    for alph_size in alphabet_range:
+        # Gather the data for this alphabet size.
+        data = []
+        alphabet = create_alphabet(alph_size)
+        for _ in xrange(trials):
+            rand_string = aho_test.build_random_string(level, alphabet)
+            root = aho_construction.construct_dfa(rand_string, alphabet)
+            lvl_sizes = get_level_sizes(root, level)
+            data.append(lvl_sizes[-1])
+        # Get the averages and variances from the data.
+        averages.append(np.average(data))
+        stddevs.append(np.std(data))
+
+    # Plot the data as a trend.
+    plt.errorbar(alphabet_range, averages, yerr=stddevs)
+    plt.title('Size at Level ' + str(level) + ' vs Alphabet Size; Trials: '
+              + str(trials))
+    plt.xlabel('Alphabet Size')
+    plt.ylabel('Level Size')
+    plt.grid(True)
+    plt.show()
 
 def get_level_size_ratio(trials, string_length, alphabet):
     """Gets the ratio between the size of levels.
@@ -377,73 +406,6 @@ def automaton_growth_ratio(string_length, alphabet):
         ratios.append((curr_size + lvl_sizes[last_lvl + 1]) / curr_size)
     return ratios
 
-def get_conditioned_clash(clash_level, samples, alphabet, max_trials):
-    """Get the clash distribution given that the last level was a specific size.
-
-    Args:
-        clash_level: The level at which to analyze the clash distributions.
-        samples: The number of samples that each conditioned value should have.
-        alphabet: Size of the alphabet to use for construction.
-        max_trials: The maximum number of samples to run to get the desired
-            number of samples.
-    """
-    seen_amount = {}
-    clash_data = {}
-
-    # Continuously loop until we have enough data.
-    running = True
-    trial_num = 0
-    while running:
-        rand_string = aho_test.build_random_string(clash_level, alphabet)
-        root = aho_construction.construct_dfa(rand_string, alphabet)
-        lvl_sizes = get_level_sizes(root, clash_level)
-        # Check if we need anymore samples
-        if lvl_sizes[-2] not in seen_amount:
-            seen_amount[lvl_sizes[-2]] = 1
-            clash_data[lvl_sizes[-2]] = []
-        elif seen_amount[lvl_sizes[-2]] < samples:
-            seen_amount[lvl_sizes[-2]] += 1
-            # Compute the clashes and add just the first clash number.
-            clashes = get_clashes(root)
-            clash_data[lvl_sizes[-2]].append(clashes[-1][0])
-        # See if we need to continue to run.
-        trial_num += 1
-        running = trial_num < max_trials
-        if running:
-            for amount in seen_amount.values():
-                if amount < samples:
-                    running = True
-                    break
-    # Trim out the data that didn't meet the sample threshold.
-    for size, amount in seen_amount.iteritems():
-        if amount < samples:
-            del clash_data[size]
-    return clash_data
-
-def plot_conditioned_clash(clash_level, samples, alphabet, max_trials):
-    """Plot the clash distribution given that the last level was some size.
-
-    Args:
-        clash_level: The level at which to analyze the clash distributions.
-        samples: The number of samples that each conditioned value should have.
-        alphabet: Size of the alphabet to use for construction.
-        max_trials: The maximum number of samples to run to get the desired
-            number of samples.
-    """
-    clash_data = get_conditioned_clash(clash_level, samples, alphabet,
-            max_trials)
-    for conditioned_size, data in clash_data.iteritems():
-        max_clash = max(data)
-        _, _, _ = plt.hist(data, 50, alpha=0.75)
-        plt.xlabel('Clash Number')
-        plt.xlim((1, max_clash + 1))
-        plt.ylabel('Frequency')
-        plt.title('Clash Number at Level ' + str(clash_level)
-                  + '; Last level Size: ' + str(conditioned_size)
-                  + '; Samples: ' + str(samples))
-        plt.grid(True)
-        plt.show()
-
 def compare_expected_growths(trials, string_length, alphabet_range):
     """Compare the simulated growth rate E[X_n+1]/E[X_n] w/ expected.
 
@@ -467,4 +429,4 @@ def compare_expected_growths(trials, string_length, alphabet_range):
     return results
 
 if __name__ == '__main__':
-    plot_lvlsize_trend(10000, 100, create_alphabet(2))
+    plot_lvlsize_trend(1000, 50, create_alphabet(8))
