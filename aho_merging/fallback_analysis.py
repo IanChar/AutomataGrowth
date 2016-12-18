@@ -8,6 +8,7 @@ import aho_construction
 import aho_test
 
 DNA_ALPH = ['A', 'C', 'G', 'T']
+COLORS = ['b', 'g', 'r', 'c', 'm', 'y']
 
 def get_fall_levels(root):
     """Gets the levels that the fallbacks lead to for each level.
@@ -80,5 +81,41 @@ def compute_fall_percentages(trials, str_length, alphabet, level_cap,
                 curr_lvl[fall_lvl] += curr_lvl[fall_lvl - 1]
     return fall_counts
 
+def plot_fall_percentages(trials, str_length, alphabet, level_cap,
+        lower_than=False):
+    """Plots the percentages of fallbacks that go to a certain level.
+
+    Args:
+        trials: The number of trials to perform.
+        str_length: The length of strings to consider.
+        alphabet: The alphabet to use for string construction.
+        level_cap: The highest level to consider when looking at where fallbacks
+            lead to.
+        lower_than: Whether to consider fallbacks less than or equal to a
+            some level in question. e.g. with this mode enabled if we see nodes
+            going back to levels 0, 1, 2, and 3, for considering level 2 we
+            would compute 75 percent rather than 25 percent.
+    """
+    percents = compute_fall_percentages(trials, str_length, alphabet, level_cap,
+                                        lower_than)
+    lvls = range(str_length + 1)
+    legends = []
+    for fall_lvl in range(level_cap + 2):
+        fall_percents = [percents[lvl][fall_lvl] for lvl in lvls]
+        fall_label = fall_lvl if fall_lvl <= level_cap else 'Other'
+        line_label, = plt.plot(lvls, fall_percents,
+                               COLORS[fall_lvl % len(COLORS)], lw=2,
+                               label='Fall to Level ' + str(fall_label))
+        if lower_than:
+            plt.fill_between(lvls, 0, fall_percents, alpha=0.2,
+                             facecolor=COLORS[fall_lvl % len(COLORS)])
+        legends.append(line_label)
+    plt.ylabel('Percent of Fallen')
+    plt.ylim((0, 1))
+    plt.xlabel('Level')
+    plt.title('Breakdown of Fall Destinations vs Level')
+    plt.legend()
+    plt.show()
+
 if __name__ == '__main__':
-    print compute_fall_percentages(10, 5, DNA_ALPH, 2)
+    plot_fall_percentages(10, 5, DNA_ALPH, 2, lower_than=True)
