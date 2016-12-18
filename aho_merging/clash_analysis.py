@@ -118,6 +118,28 @@ def get_expected_vals(trials, string_length, alphabet):
         to_return.append((accum / num_expanded[lvl], accum / trials))
     return to_return
 
+def get_expected_first_clash(trials, string_length, alphabet):
+    """Find the expected value of 1/clash by only looking at the first clash in
+    a given simulation. i.e. E[1/T_1,n]
+
+    Args:
+        trials: The number of trials to perform.
+        string_length: The length of the strings to look at.
+        alphabet: The alphabet to use for string construction.
+    Returns:
+        A list of expected 1/clash for each level.
+    """
+    # Gather the data.
+    data = [0 for _ in range(string_length)]
+    for _ in xrange(trials):
+        rand_string = aho_test.build_random_string(string_length, alphabet)
+        root = aho_construction.construct_dfa(rand_string, alphabet)
+        clashes = get_clashes(root)
+        for lvl, clash_data in enumerate(clashes):
+            data[lvl] += 1 / clash_data[0]
+    return [lvl_data / trials for lvl_data in data]
+
+
 def sim_next_size(expected_vals, alphabet):
     """Calculate the expected next level size from previous information.
 
@@ -243,9 +265,11 @@ def plot_lvlsize_trend(trials, string_length, alphabet):
     # Get the averages and variances from the data.
     averages = [np.average(lvl_data) for lvl_data in data]
     stddev = [np.std(lvl_data) for lvl_data in data]
+    medians = [np.median(lvl_data) for lvl_data in data]
 
     # Plot the data as a trend.
     plt.errorbar(range(1, string_length + 1), averages, yerr=stddev)
+    plt.plot(range(1, string_length + 1), medians, 'ro')
     plt.title('Average Level Size vs Level; Trials: ' + str(trials)
               + '; Alphabet: ' + str(len(alphabet)))
     plt.xlabel('Level')
@@ -429,4 +453,4 @@ def compare_expected_growths(trials, string_length, alphabet_range):
     return results
 
 if __name__ == '__main__':
-    plot_lvlsize_trend(1000, 50, create_alphabet(8))
+    plot_lvlsize_trend(10000, 50, create_alphabet(8))

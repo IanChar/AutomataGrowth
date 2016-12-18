@@ -64,7 +64,9 @@ class State(object):
                                                   self.unique_id))
         to_print.append('Transitions:')
         for key, value in self.transitions.iteritems():
-            to_print.append('%s -> (%d; %s)' % (key, value.level, value.name))
+            to_print.append('%s -> (%d; %s; %d)' % (key, value.level,
+                                                    value.name,
+                                                    value.unique_id))
         return '\n'.join(to_print)
 
     def __eq__(self, other):
