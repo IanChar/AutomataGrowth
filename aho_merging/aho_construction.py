@@ -209,3 +209,7 @@ def print_dfa(root_state):
         for child in curr.transitions.values():
             if child not in seen and child not in queue:
                 queue.appendleft(child)
+
+if __name__ == '__main__':
+    root = construct_dfa([['A', 'C', 'D'], ['B', 'C'], ['A', 'D']], ['A', 'B', 'C', 'D'])
+    print_dfa(root)

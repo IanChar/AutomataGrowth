@@ -277,13 +277,14 @@ def plot_lvlsize_trend(trials, string_length, alphabet):
     plt.grid(True)
     plt.show()
 
-def plot_asym_lvlsize(alphabet_range, trials, level=40):
+def plot_asym_lvlsize(alphabet_range, trials, level, semilog=False):
     """Plot the asymptotic level size with respect to alphabet size.
 
     Args:
         alphabet_range: The sizes of the alphabet to test.
         trials: The number of trials to run for each alphabet.
         level: The level at which we measure/call "asymptotic"
+        log: Whether to do a have the level size axis be log-based.
     """
     averages = []
     stddevs = []
@@ -301,7 +302,10 @@ def plot_asym_lvlsize(alphabet_range, trials, level=40):
         stddevs.append(np.std(data))
 
     # Plot the data as a trend.
-    plt.errorbar(alphabet_range, averages, yerr=stddevs)
+    if semilog:
+        plt.semilogy(alphabet_range, averages)
+    else:
+        plt.errorbar(alphabet_range, averages, yerr=stddevs)
     plt.title('Size at Level ' + str(level) + ' vs Alphabet Size; Trials: '
               + str(trials))
     plt.xlabel('Alphabet Size')
@@ -453,4 +457,4 @@ def compare_expected_growths(trials, string_length, alphabet_range):
     return results
 
 if __name__ == '__main__':
-    plot_lvlsize_trend(10000, 50, create_alphabet(8))
+    plot_asym_lvlsize(range(2, 15), 1000, 40, semilog=True)

@@ -6,7 +6,7 @@ import automata
 # DNA Alphabet strings are made from.
 
 # DNA Alphabet
-ALPHABET = ['A', 'C', 'G', 'T']
+ALPHABET = ['A', 'B']
 
 # Full English alphabet.
 # ALPHABET = [chr(x) for x in range(65, 92)]
@@ -193,4 +193,4 @@ def _find_possible_transitions(curr_state, compare_str, string_codes):
 
 
 if __name__ == '__main__':
-    print binary_subset_construction([['A', 'G'], ['T'], ['A', 'T'], ['A', 'C', 'G', 'T'], ['A', 'G']])
+    print binary_subset_construction([['A'], ['A', 'B'], ['A'], ['A']])
