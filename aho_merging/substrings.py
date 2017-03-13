@@ -5,6 +5,8 @@ from matplotlib import pyplot as plt
 
 import aho_test
 
+COLORS = ['b', 'g', 'r', 'c', 'm', 'y']
+
 def get_theoretical_ratio_disjoint(alph):
     """ Returns the theoretical disjoint value given the alphabet size.
 
@@ -25,9 +27,10 @@ def get_theoretical_substring_prob(sub_len, alph, string_len):
         string_len: The length of the string.
     Returns: Probability of having a matching substring of length sub_len.
     """
-    to_return = string_len - sub_len
-    to_return *= (1 - get_theoretical_ratio_disjoint(alph)) ** sub_len
+    to_return = (1 - get_theoretical_ratio_disjoint(alph)) ** sub_len
+    to_return = 1 - (1 - to_return) ** (string_len - sub_len)
     return to_return
+
 
 def ratio_disjoint(trials, alphabet_size):
     """Finds the ratio of disjoint generalized string letters.
@@ -120,14 +123,43 @@ def test_substring_length_prob(sub_len, alph, string_len, trials):
         sub_len: The size of the substring.
         alph: The size of the alphabet.
         string_len: The size of the string to test.
+    Returns:
+        Tuple of (theoretical, observed)
     """
-    print "Theoretical:", get_theoretical_substring_prob(sub_len, alph,
-                                                         string_len)
+    theoretical = get_theoretical_substring_prob(sub_len, alph, string_len)
     # Find ratio from real life sim.
     num_successes = [1 if num_overalapping_substrings(sub_len, string_len, alph)
                      else 0 for _ in xrange(trials)]
     sim_ratio = sum(num_successes) / trials
-    print "Observed:", sim_ratio
+    return (theoretical, sim_ratio)
+
+def plot_substring_prob_error(sub_lens, alphs, string_len, trials):
+    """ Plots the error between theoretical prob and observed highest substring.
+
+    Args:
+        sub_lens: A list of the substring lengths to plot.
+        alphs: A list of the alphabet sizes to try.
+        string_len: The total length of the string.
+        trials: The total number of trials to perform for each data point.
+    """
+    data_by_alph = [[] for _ in range(len(alphs))]
+    for alph_index, alph_size in enumerate(alphs):
+        for sub_len in sub_lens:
+            found_values = test_substring_length_prob(sub_len, alph_size,
+                                                      string_len, trials)
+            data_by_alph[alph_index].append((found_values[0]
+                                             - found_values[1]))
+    for alph_index, alph_size in enumerate(alphs):
+        plt.plot(sub_lens, data_by_alph[alph_index], label=('Alphabet '
+                                                            + str(alph_size)))
+    plt.legend(loc='upper right')
+    plt.title('Theoretical - Observed Probability for Matching Substring'
+              + '; String Length: ' + str(string_len)
+              + '; Trials: ' + str(trials))
+    plt.xlabel('Substring Size')
+    plt.ylabel('Probability')
+    plt.show()
 
 if __name__ == '__main__':
-    test_substring_length_prob(5, 4, 10, 100)
+    # test_substring_length_prob(35, 10, 50, 1000)
+    plot_substring_prob_error([10, 20, 30, 40, 50], [4, 6, 8, 10], 100, 100)
