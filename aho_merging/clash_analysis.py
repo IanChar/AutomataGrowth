@@ -246,13 +246,14 @@ def plot_lvlsize_hist(trials, string_length, alphabet):
             title=' '.join(['Size of Level', str(lvl + 1), 'Samples:',
             str(len(lvl_size))]))
 
-def plot_lvlsize_trend(trials, string_length, alphabet):
+def plot_lvlsize_trend(trials, string_length, alphabet, vert_line=None):
     """Plots the trend of average level size with variance included.
 
     Args:
         trials: Number of trials to be performed.
         string_length: The length of the string to consider.
         alphabet: The alphabet to use in string construction.
+        vert_line: Location of a vertical line to be drawn on the plot.
     """
     # Gather the data.
     data = [[] for _ in range(string_length)]
@@ -270,6 +271,8 @@ def plot_lvlsize_trend(trials, string_length, alphabet):
     # Plot the data as a trend.
     plt.errorbar(range(1, string_length + 1), averages, yerr=stddev)
     plt.plot(range(1, string_length + 1), medians, 'ro')
+    if vert_line:
+        plt.axvline(x=vert_line, color='black', linestyle='dashed')
     plt.title('Average Level Size vs Level; Trials: ' + str(trials)
               + '; Alphabet: ' + str(len(alphabet)))
     plt.xlabel('Level')
@@ -457,4 +460,5 @@ def compare_expected_growths(trials, string_length, alphabet_range):
     return results
 
 if __name__ == '__main__':
-    plot_asym_lvlsize(range(2, 15), 1000, 40, semilog=True)
+    plot_lvlsize_trend(100, 50, ['A', 'C', 'G', 'T'], 17)
+    # plot_asym_lvlsize(range(2, 15), 1000, 40, semilog=True)
