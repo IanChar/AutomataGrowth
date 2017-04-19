@@ -9,6 +9,7 @@ import aho_construction
 import aho_test
 
 DNA_ALPH = ['A', 'C', 'G', 'T']
+COLORS = ['b', 'g', 'r', 'y', 'p']
 
 def create_alphabet(size):
     """Creates arbitrary alphabet to use of specified size.
@@ -246,7 +247,8 @@ def plot_lvlsize_hist(trials, string_length, alphabet):
             title=' '.join(['Size of Level', str(lvl + 1), 'Samples:',
             str(len(lvl_size))]))
 
-def plot_lvlsize_trend(trials, string_length, alphabet, vert_line=None):
+def plot_lvlsize_trend(trials, string_length, alphabet, vert_line=None,
+        num_individual=0, accum=False, log_plot=False):
     """Plots the trend of average level size with variance included.
 
     Args:
@@ -254,6 +256,9 @@ def plot_lvlsize_trend(trials, string_length, alphabet, vert_line=None):
         string_length: The length of the string to consider.
         alphabet: The alphabet to use in string construction.
         vert_line: Location of a vertical line to be drawn on the plot.
+        num_individual: The number of individual trials to plot
+        accum: Plot the accumulation of depth size i.e. tree size.
+        log_plot: Whether to make as a log_plot.
     """
     # Gather the data.
     data = [[] for _ in range(string_length)]
@@ -261,22 +266,46 @@ def plot_lvlsize_trend(trials, string_length, alphabet, vert_line=None):
         rand_string = aho_test.build_random_string(string_length, alphabet)
         root = aho_construction.construct_dfa(rand_string, alphabet)
         lvl_sizes = get_level_sizes(root, string_length)
-        for lvl, lvl_size in enumerate(lvl_sizes):
-            data[lvl].append(lvl_size)
+        if accum:
+            tree_size = 0
+            for lvl, lvl_size in enumerate(lvl_sizes):
+                tree_size += lvl_size
+                data[lvl].append(tree_size)
+        else:
+            for lvl, lvl_size in enumerate(lvl_sizes):
+                data[lvl].append(lvl_size)
     # Get the averages and variances from the data.
     averages = [np.average(lvl_data) for lvl_data in data]
     stddev = [np.std(lvl_data) for lvl_data in data]
-    medians = [np.median(lvl_data) for lvl_data in data]
+    if log_plot:
+        averages = np.log(averages)
+        stddev = np.log(stddev)
+    # medians = [np.median(lvl_data) for lvl_data in data]
 
     # Plot the data as a trend.
-    plt.errorbar(range(1, string_length + 1), averages, yerr=stddev)
-    plt.plot(range(1, string_length + 1), medians, 'ro')
+    plt.errorbar(range(1, string_length + 1), averages, yerr=stddev, fmt='k-', ecolor='k')
+    # plt.plot(range(1, string_length + 1), medians, 'ro')
+    # plot individual trends.
+    for index in range(num_individual):
+        rand_string = aho_test.build_random_string(string_length, alphabet)
+        root = aho_construction.construct_dfa(rand_string, alphabet)
+        lvl_sizes = get_level_sizes(root, string_length)
+        if accum:
+            for lvl_index in range(1, len(lvl_sizes)):
+                lvl_sizes[lvl_index] += lvl_sizes[lvl_index - 1]
+        if log_plot:
+            lvl_sizes = np.log(lvl_sizes)
+        plt.plot(range(1, string_length + 1), lvl_sizes, COLORS[index] + '-')
+
     if vert_line:
         plt.axvline(x=vert_line, color='black', linestyle='dashed')
-    plt.title('Average Level Size vs Level; Trials: ' + str(trials)
-              + '; Alphabet: ' + str(len(alphabet)))
-    plt.xlabel('Level')
-    plt.ylabel('Level Size')
+    plt.title('Trials: ' + str(trials)
+              + '; Alphabet Size: ' + str(len(alphabet)))
+    plt.xlabel('Depth')
+    if log_plot:
+        plt.ylabel('Log Depth Size')
+    else:
+        plt.ylabel('Depth Size')
     plt.grid(True)
     plt.show()
 
@@ -460,5 +489,5 @@ def compare_expected_growths(trials, string_length, alphabet_range):
     return results
 
 if __name__ == '__main__':
-    plot_lvlsize_trend(100, 50, ['A', 'C', 'G', 'T'], 17)
+    plot_lvlsize_trend(10000, 50, ['A', 'B'], num_individual=3, accum=True, log_plot=True)
     # plot_asym_lvlsize(range(2, 15), 1000, 40, semilog=True)
