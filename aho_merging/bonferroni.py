@@ -4,9 +4,15 @@ probability using Bonferroni inequalities.
 """
 from __future__ import division
 import operator as op
+import aho_test
 
 def get_intersection(a, k, c):
-    """Get the intersection probability using total law of probability."""
+    """Get the intersection probability using total law of probability.
+    Args:
+        a: Size of the alphabet.
+        k: Size of the substring.
+        c: Number of intersections.
+    """
     to_return = 0
     lambdas = [_get_lambda_const(i, a, c) for i in xrange(1, a + 1)]
     configs = _get_size_configs(a, k)
@@ -17,6 +23,31 @@ def get_intersection(a, k, c):
         to_return += term
     to_return *= (1 / (2 ** a - 1)) ** k
     return to_return
+
+def sim_intersection_prob(a, k, c, trials):
+    """Get simulated intersection probability.
+    Args:
+        a: size of alphabet.
+        k: substring size.
+        c: Number of intersections.
+    """
+    alph = [chr(ord('A') + i) for i in range(a)]
+    num_match = 0
+    for _ in xrange(trials):
+        prefix = aho_test.build_random_string(k, alph)
+        has_match = True
+        for _ in xrange(c):
+            for index in xrange(k):
+                next_set = set(aho_test.build_random_string(1, alph)[0])
+                pref_set = set(prefix[index])
+                if len(pref_set.intersection(next_set)) == 0:
+                    has_match = False
+                    break
+            if not has_match:
+                break
+        if has_match:
+            num_match += 1
+    return num_match / trials
 
 def _get_lambda_const(size, a, c):
     """Get the size constant for the computation.

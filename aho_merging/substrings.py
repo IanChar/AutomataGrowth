@@ -53,13 +53,14 @@ def ratio_disjoint(trials, alphabet_size):
             num_disjoint += 1
     return num_disjoint / trials
 
-def num_overalapping_substrings(sub_len, string_len, alph_size):
+def num_overalapping_substrings(sub_len, string_len, alph_size, no_overlap=False):
     """Find the number of overlapping substrings match with the prefix.
 
     Args:
         sub_len: The length of the substring to check.
         string_len: The size of the string to test on.
         alph_size: The size of the alphabet the string is built with.
+        no_overlap: Whether there can be overlap with the prefix.
     Returns:
         The number of substrings of length sub_len match the prefix.
     """
@@ -70,7 +71,8 @@ def num_overalapping_substrings(sub_len, string_len, alph_size):
     string = [set(letter) for letter in string]
 
     num_substrings = 0
-    for start_index in range(1, string_len - sub_len):
+    start = sub_len if no_overlap else 1
+    for start_index in range(start, string_len - sub_len):
         is_substring = True
         for sub_index in range(sub_len):
             if len(string[sub_index].intersection(string[start_index
@@ -116,19 +118,20 @@ def matching_substring_hist(trials, sub_len, string_len, alph_size):
     plt.ylabel('Frequency')
     plt.show()
 
-def test_substring_length_prob(sub_len, alph, string_len, trials):
+def test_substring_length_prob(sub_len, alph, string_len, trials, no_overlap=False):
     """ Tests theoretical probability against simulations for prob of substring.
 
     Args:
         sub_len: The size of the substring.
         alph: The size of the alphabet.
         string_len: The size of the string to test.
+        assumption: Whether to substring can overlap with prefix.
     Returns:
         Tuple of (theoretical, observed)
     """
     theoretical = get_theoretical_substring_prob(sub_len, alph, string_len)
     # Find ratio from real life sim.
-    num_successes = [1 if num_overalapping_substrings(sub_len, string_len, alph)
+    num_successes = [1 if num_overalapping_substrings(sub_len, string_len, alph, no_overlap)
                      else 0 for _ in xrange(trials)]
     sim_ratio = sum(num_successes) / trials
     return (theoretical, sim_ratio)
