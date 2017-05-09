@@ -6,8 +6,9 @@ from __future__ import division
 import operator as op
 import aho_test
 
-def get_intersection(a, k, c):
+def get_intersection_two(a, k, c):
     """Get the intersection probability using total law of probability.
+    This way is really bad. Should be avoided.
     Args:
         a: Size of the alphabet.
         k: Size of the substring.
@@ -23,6 +24,27 @@ def get_intersection(a, k, c):
         to_return += term
     to_return *= (1 / (2 ** a - 1)) ** k
     return to_return
+
+def get_intersection(a, k, c):
+    """Get the intersection probability using total law of probability.
+    Args:
+        a: Size of the alphabet.
+        k: Size of the substring.
+        c: Number of intersections.
+    """
+    to_return = sum([_get_lambda_const(i, a, c) for i in xrange(1, a + 1)])
+    to_return *= (1 / (2 ** a - 1))
+    return to_return ** k
+
+def get_single_match(a, k):
+    """Get the probability there is a single matching substring of length k.
+    Args:
+        a: Size of the alphabet.
+        k: Size of the substring.
+    """
+    to_return = 2 ** (2 * a) - 3 ** a
+    to_return /= (2 ** a - 1) ** 2
+    return to_return ** k
 
 def sim_intersection_prob(a, k, c, trials):
     """Get simulated intersection probability.
