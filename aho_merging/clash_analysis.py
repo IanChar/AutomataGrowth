@@ -248,7 +248,7 @@ def plot_lvlsize_hist(trials, string_length, alphabet):
             str(len(lvl_size))]))
 
 def plot_lvlsize_trend(trials, string_length, alphabet, vert_line=None,
-        num_individual=0, accum=False, log_plot=False):
+        num_individual=0, accum=False, log_plot=False, window=None):
     """Plots the trend of average level size with variance included.
 
     Args:
@@ -259,6 +259,7 @@ def plot_lvlsize_trend(trials, string_length, alphabet, vert_line=None,
         num_individual: The number of individual trials to plot
         accum: Plot the accumulation of depth size i.e. tree size.
         log_plot: Whether to make as a log_plot.
+        window: The range on the x-axis to consider.
     """
     # Gather the data.
     data = [[] for _ in range(string_length)]
@@ -306,6 +307,8 @@ def plot_lvlsize_trend(trials, string_length, alphabet, vert_line=None,
         plt.ylabel('Log Depth Size')
     else:
         plt.ylabel('Depth Size')
+    if window is not None:
+        plt.xlim(window[0], window[1])
     plt.grid(True)
     plt.show()
 
