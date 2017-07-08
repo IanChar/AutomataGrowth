@@ -38,6 +38,24 @@ class State(object):
         to_print.append('-------------------------------------\n')
         return '\n'.join(to_print)
 
+class DFA(object):
+
+    def __init__(self, root, num_states):
+        self.root = root
+        self.num_states = num_states
+
+    def get_root(self):
+        return self.root
+
+    def get_num_states(self):
+        return self.num_states
+
+    def __str__(self):
+        to_print = []
+        to_print.append('Number of states: %d' % self.num_states)
+        to_print.append(str(self.root))
+        return '\n'.join(to_print)
+
 def aho_merge(g, alphabet):
     sid_counter = 0
     # Initialize start state and child.
@@ -74,7 +92,7 @@ def aho_merge(g, alphabet):
                         failMap[failure] = child
                     curr_state.set_goto(letter, child)
         next_depth = deque(failMap.values())
-    return start_state
+    return DFA(start_state, sid_counter)
 
 def find_failure(parent, letter):
     failure = None
