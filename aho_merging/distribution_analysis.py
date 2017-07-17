@@ -1,5 +1,6 @@
 """Code to analyze the distribution of number of states for DFA."""
 from __future__ import division
+import pandas as pd
 
 import sys
 sys.path.append('..')
@@ -34,6 +35,21 @@ class DistributionGroup(object):
         pairs = [(dist.length, dist.mean) for dist in self.distributions]
         pairs.sort()
         return [pair[1] for pair in pairs]
+
+    def get_all_samples(self):
+        """Returns all samples in a pandas dataframe.
+        Returns: Samples with length, probabilities, and number of states.
+        """
+        length_list = []
+        probs_list = []
+        num_states_list = []
+        for dists in self.distributions:
+            for samp in dists.samples:
+                length_list.append(dists.length)
+                probs_list.append(dists.probs)
+                num_states_list.append(samp)
+        return pd.DataFrame({'length': length_list, 'probs': probs_list,
+                             'num_states': num_states_list})
 
 
 class StateDistribution(object):
@@ -80,6 +96,8 @@ class StateDistribution(object):
                          / (len(new_samples) + len(self.samples)))
 
 if __name__ == '__main__':
-    dist = StateDistribution(5, [0.5, 0.5, 0.5, 0.5])
-    dist.draw_samples(10)
-    print dist.mean
+    probs = [0.5, 0.5, 0.5, 0.5]
+    group = DistributionGroup([(3, probs), (4, probs), (5, probs)])
+    group.draw_samples(20)
+    print group.get_means_by_level()
+    print group.get_all_samples()
