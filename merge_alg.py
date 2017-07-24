@@ -4,11 +4,12 @@ from collections import deque
 
 class State(object):
 
-    def __init__(self, sid, name=''):
+    def __init__(self, sid, name='', depth=None):
         self.sid = sid
         self.name = name
         self.goto = {}
         self.failure = None
+        self.depth = depth
 
     def set_goto(self, letter, state):
         self.goto[letter] = state
@@ -26,6 +27,7 @@ class State(object):
         to_print = []
         to_print.append('-------------------------------------')
         to_print.append('State ID: %d' % self.sid)
+        to_print.append('Depth: %d' % self.depth)
         if self.name != '':
             to_print.append('State Name: %s' % self.name)
         to_print.append('Goto Values:')
@@ -50,6 +52,18 @@ class DFA(object):
     def get_num_states(self):
         return self.num_states
 
+    def print_automaton(self):
+        queue = deque()
+        queue.appendleft(self.root)
+        seen = [self.root]
+        while len(queue) > 0:
+            curr = queue.pop()
+            print curr
+            for child in curr.goto.values():
+                if child not in seen:
+                    queue.appendleft(child)
+                    seen.append(child)
+
     def __str__(self):
         to_print = []
         to_print.append('Number of states: %d' % self.num_states)
@@ -59,9 +73,9 @@ class DFA(object):
 def aho_merge(g, alphabet):
     sid_counter = 0
     # Initialize start state and child.
-    start_state = State(sid_counter, 'Epsilon')
+    start_state = State(sid_counter, 'Epsilon', 0)
     sid_counter += 1
-    start_child = State(sid_counter)
+    start_child = State(sid_counter, depth=1)
     start_child.set_failure(start_state)
     sid_counter += 1
     for letter in alphabet:
@@ -75,7 +89,7 @@ def aho_merge(g, alphabet):
     for depth in range(len(g)):
         # Init empty hash table
         failMap = {}
-        # For state in thsi depth.
+        # For state in this depth.
         for curr_state in next_depth:
             # Mark accepting?a
             if depth == len(g) - 1:
@@ -86,11 +100,11 @@ def aho_merge(g, alphabet):
                     # Find failure, add to hash table if needed, link to parent.
                     failure = find_failure(curr_state, letter)
                     if failure not in failMap.keys():
-                        child = State(sid_counter)
+                        child = State(sid_counter, depth=curr_state.depth + 1)
                         sid_counter += 1
                         child.set_failure(failure)
                         failMap[failure] = child
-                    curr_state.set_goto(letter, child)
+                    curr_state.set_goto(letter, failMap[failure])
         next_depth = deque(failMap.values())
     return DFA(start_state, sid_counter)
 
@@ -101,22 +115,12 @@ def find_failure(parent, letter):
         curr_state = curr_state.failure
         if letter in curr_state.goto.keys():
             failure = curr_state.goto[letter]
+            break
     if failure is None:
         failure = curr_state
     return failure
 
-def print_automaton(start_state):
-    queue = deque()
-    queue.appendleft(start_state)
-    seen = [start_state]
-    while len(queue) > 0:
-        curr = queue.pop()
-        print curr
-        for child in curr.goto.values():
-            if child not in seen:
-                queue.appendleft(child)
-                seen.append(child)
-
 
 if __name__ == '__main__':
-    print_automaton(aho_merge([['A', 'C', 'D'], ['B', 'C'], ['A', 'D']], ['A', 'B', 'C', 'D']))
+    dfa = aho_merge([['A', 'B'], ['C', 'B', 'D'], ['A'], ['C', 'B', 'D']], ['A', 'B', 'C', 'D'])
+    dfa.print_automaton()

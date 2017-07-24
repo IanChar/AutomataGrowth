@@ -25,11 +25,9 @@ class DepthSampler(object):
         self.length = length
         self.alphabet = string_util.get_default_alphabet(len(probs))
         self.SAMPLE_MAP = {
-            'number_of_states': self._get_states_per_depth,
-            'failure_dest': None,
-            'failures_to': None,
+            'states': self._get_states_per_depth,
+            'threads': self._get_threads_per_depth,
         }
-
 
     def draw_samples(self, num_samples, props):
         """Draws samples and finds the requested features.
@@ -65,16 +63,44 @@ class DepthSampler(object):
         """
         to_return = []
         queue = deque()
-        queue.appendleft((root, 0))
+        queue.appendleft(root)
         seen = set()
         seen.add(root.sid)
         while len(queue) > 0:
-            curr_node, depth = queue.pop()
-            if len(to_return) < depth + 1:
+            curr_node = queue.pop()
+            if len(to_return) < curr_node.depth + 1:
                 to_return.append(0)
-            to_return[depth] += 1
+            to_return[curr_node.depth] += 1
             for child in curr_node.goto.values():
                 if child.sid not in seen:
-                    queue.appendleft((child, depth + 1))
+                    queue.appendleft(child)
                     seen.add(child.sid)
         return to_return
+
+    def _get_threads_per_depth(self, root):
+        """Finds the number of threads (failures not going to root) per depth.
+        Args:
+            root: Root of the DFA.
+        Returns: List where each entry is how many states are in the depth
+            corresponding with the index.
+        """
+        to_return = []
+        queue = deque()
+        queue.appendleft(root)
+        seen = set()
+        seen.add(root.sid)
+        while len(queue) > 0:
+            curr_node = queue.pop()
+            if len(to_return) < curr_node.depth + 1:
+                to_return.append(0)
+            if curr_node.failure is not None and curr_node.failure.depth > 0:
+                to_return[curr_node.depth] += 1
+            for child in curr_node.goto.values():
+                if child.sid not in seen:
+                    queue.appendleft(child)
+                    seen.add(child.sid)
+        return to_return
+
+if __name__ == '__main__':
+    ds = DepthSampler([0.5 for _ in range(4)], 4)
+    print ds.draw_samples(1, ['states', 'threads'])
