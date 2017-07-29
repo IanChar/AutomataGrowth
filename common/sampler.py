@@ -28,6 +28,7 @@ class DepthSampler(object):
             'states': self._get_states_per_depth,
             'threads': self._get_threads_per_depth,
             'thread_children': self._get_thread_children,
+            'new_thread': self._get_has_new_thread,
         }
 
     def draw_samples(self, num_samples, props):
@@ -104,6 +105,8 @@ class DepthSampler(object):
 
     def _get_thread_children(self, root):
         """Samples the number of children that each thread has for depths.
+        Critical decision made for this is that only count children once ever.
+        i.e. if two threads merge the offspring is only counted for one of them.
         Args:
             root: Root of the DFA.
         Returns: List of lists where each inner list has the samples and its
@@ -129,11 +132,45 @@ class DepthSampler(object):
                 to_return[curr_node.depth].append(thread_children)
         return to_return
 
+    def _get_has_new_thread(self, root):
+        """Finds whether each depth has a new thread or not.
+        Args:
+            root: The root of the DFA.
+        Returns: List where there is a 0 if the corresponding depth does not
+            have a new thread and 1 if it does.
+        """
+        to_return = []
+        queue = deque()
+        queue.appendleft(root)
+        seen = set()
+        seen.add(root.sid)
+        while len(queue) > 0:
+            curr_node = queue.pop()
+            if len(to_return) < curr_node.depth + 1:
+                to_return.append(0)
+            if curr_node.failure is not None and curr_node.failure.depth == 1:
+                to_return[curr_node.depth] = 1
+            for child in curr_node.goto.values():
+                if child.sid not in seen:
+                    queue.appendleft(child)
+                    seen.add(child.sid)
+        return to_return
+
+    def _get_merged_degree(self, root):
+        """If a thread comes from the merging of multiple threads, returns
+        number of parents for that node minus one.
+        Args:
+            root: The root of the DFA.
+        Returns: List of lists where each inner list contains degree for each
+            merged node in the depth corresponding to the inner list index.
+        """
+        pass
+
 def _is_thread(node):
     return node.failure is not None and node.failure.depth > 0
 
 if __name__ == '__main__':
     ds = DepthSampler([0.5 for _ in range(4)], 4)
-    df = ds.draw_samples(1, ['states', 'threads', 'thread_children'])
+    df = ds.draw_samples(1, ['states', 'threads', 'thread_children', 'new_thread'])
     print df
     print df.dtypes
