@@ -29,6 +29,7 @@ class DepthSampler(object):
             'threads': self._get_threads_per_depth,
             'thread_children': self._get_thread_children,
             'new_thread': self._get_has_new_thread,
+            'merge_degree': self._get_merged_degree,
         }
 
     def draw_samples(self, num_samples, props):
@@ -164,13 +165,37 @@ class DepthSampler(object):
         Returns: List of lists where each inner list contains degree for each
             merged node in the depth corresponding to the inner list index.
         """
-        pass
+        queue = deque()
+        queue.appendleft(root)
+        seen = set()
+        seen.add(root.sid)
+        # List of dictionaries where index i corresponds to depth i + 1.
+        degree_mappings = [{}]
+        while len(queue) > 0:
+            curr_node = queue.pop()
+            if len(degree_mappings) < curr_node.depth + 2:
+                degree_mappings.append({})
+            degrees = degree_mappings[curr_node.depth + 1]
+            for child in set(curr_node.goto.values()):
+                if _is_thread(child):
+                    if child.sid in degrees.keys():
+                        degrees[child.sid] += 1
+                    else:
+                        degrees[child.sid] = 0
+            for child in curr_node.goto.values():
+                if child.sid not in seen:
+                    queue.appendleft(child)
+                    seen.add(child.sid)
+        # Trim off last entry since the last depth has no children.
+        return ([[deg for deg in depth.values() if deg > 0]
+                 for depth in degree_mappings][:-1])
 
 def _is_thread(node):
     return node.failure is not None and node.failure.depth > 0
 
 if __name__ == '__main__':
     ds = DepthSampler([0.5 for _ in range(4)], 4)
-    df = ds.draw_samples(1, ['states', 'threads', 'thread_children', 'new_thread'])
+    df = ds.draw_samples(1, ['states', 'threads', 'thread_children',
+                             'new_thread', 'merge_degree'])
     print df
     print df.dtypes
