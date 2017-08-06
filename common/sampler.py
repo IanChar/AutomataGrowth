@@ -28,6 +28,7 @@ class DepthSampler(object):
             'states': self._get_states_per_depth,
             'threads': self._get_threads_per_depth,
             'thread_children': self._get_thread_children,
+            'total_children': self._get_total_children,
             'new_thread': self._get_has_new_thread,
             'merge_degree': self._get_merged_degree,
         }
@@ -133,6 +134,35 @@ class DepthSampler(object):
                 to_return[curr_node.depth].append(thread_children)
         return to_return
 
+    def _get_total_children(self, root):
+        """Samples the TOTAL number of children that each thread has for depths.
+        This will count every child, i.e. double count merged children.
+        Args:
+            root: Root of the DFA.
+        Returns: List of lists where each inner list has the samples and its
+            index is the depth in the DFA.
+        """
+        to_return = []
+        queue = deque()
+        queue.appendleft(root)
+        seen = set()
+        seen.add(root.sid)
+        while len(queue) > 0:
+            curr_node = queue.pop()
+            if len(to_return) < curr_node.depth + 1:
+                to_return.append([])
+            if _is_thread(curr_node):
+                thread_children = 0
+                for child in set(curr_node.goto.values()):
+                    if _is_thread(child):
+                        thread_children += 1
+                to_return[curr_node.depth].append(thread_children)
+            for child in curr_node.goto.values():
+                if child.sid not in seen:
+                    queue.appendleft(child)
+                    seen.add(child.sid)
+        return to_return
+
     def _get_has_new_thread(self, root):
         """Finds whether each depth has a new thread or not.
         Args:
@@ -175,13 +205,14 @@ class DepthSampler(object):
             curr_node = queue.pop()
             if len(degree_mappings) < curr_node.depth + 2:
                 degree_mappings.append({})
-            degrees = degree_mappings[curr_node.depth + 1]
-            for child in set(curr_node.goto.values()):
-                if _is_thread(child):
-                    if child.sid in degrees.keys():
-                        degrees[child.sid] += 1
-                    else:
-                        degrees[child.sid] = 0
+            if _is_thread(curr_node):
+                degrees = degree_mappings[curr_node.depth + 1]
+                for child in set(curr_node.goto.values()):
+                    if _is_thread(child):
+                        if child.sid in degrees.keys():
+                            degrees[child.sid] += 1
+                        else:
+                            degrees[child.sid] = 0
             for child in curr_node.goto.values():
                 if child.sid not in seen:
                     queue.appendleft(child)
@@ -196,6 +227,5 @@ def _is_thread(node):
 if __name__ == '__main__':
     ds = DepthSampler([0.5 for _ in range(4)], 4)
     df = ds.draw_samples(1, ['states', 'threads', 'thread_children',
-                             'new_thread', 'merge_degree'])
+                             'new_thread', 'merge_degree', 'total_children'])
     print df
-    print df.dtypes
