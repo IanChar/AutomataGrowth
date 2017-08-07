@@ -128,7 +128,8 @@ class DepthSampler(object):
                 if child.sid not in seen:
                     queue.appendleft(child)
                     seen.add(child.sid)
-                    if _is_thread(curr_node) and _is_thread(child):
+                    if (_is_thread(curr_node) and _is_thread(child)
+                            and child.failure.depth > 1):
                         thread_children += 1
             if thread_children is not None:
                 to_return[curr_node.depth].append(thread_children)
