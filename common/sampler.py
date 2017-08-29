@@ -222,8 +222,9 @@ class DepthSampler(object):
         return ([[deg for deg in depth.values() if deg > 0]
                  for depth in degree_mappings][:-1])
 
-def _is_thread(node):
-    return node.failure is not None and node.failure.depth > 0
+
+def _is_thread(state):
+    return state.failure is not None and state.failure.depth > 0
 
 if __name__ == '__main__':
     ds = DepthSampler([0.5 for _ in range(4)], 4)
