@@ -31,6 +31,7 @@ class DepthSampler(object):
             'total_children': self._get_total_children,
             'new_thread': self._get_has_new_thread,
             'merge_degree': self._get_merged_degree,
+            'failure_chain_length': self._get_failure_chain_lengths,
         }
 
     def draw_samples(self, num_samples, props):
@@ -222,6 +223,37 @@ class DepthSampler(object):
         return ([[deg for deg in depth.values() if deg > 0]
                  for depth in degree_mappings][:-1])
 
+    def _get_failure_chain_lengths(self, root):
+        """Get the length of the failure chain for each state.
+         Args:
+            root: The root of the DFA.
+        Returns: List of lists where each inner list contains the length of the
+            failure chain for each of the states in the depth.
+        """
+        queue = deque()
+        queue.appendleft(root)
+        seen = set()
+        seen.add(root.sid)
+        results = []
+        while len(queue) > 0:
+            curr_node = queue.pop()
+            if len(results) < curr_node.depth + 1:
+                results.append([])
+            results[curr_node.depth].append(_count_failure_chain(curr_node))
+            for child in curr_node.goto.values():
+                if child.sid not in seen:
+                    queue.appendleft(child)
+                    seen.add(child.sid)
+        return results
+
+
+def _count_failure_chain(state):
+    count = 0
+    curr = state
+    while curr.failure is not None:
+        curr = curr.failure
+        count += 1
+    return count
 
 def _is_thread(state):
     return state.failure is not None and state.failure.depth > 0
@@ -229,5 +261,6 @@ def _is_thread(state):
 if __name__ == '__main__':
     ds = DepthSampler([0.5 for _ in range(4)], 4)
     df = ds.draw_samples(1, ['states', 'threads', 'thread_children',
-                             'new_thread', 'merge_degree', 'total_children'])
+                             'new_thread', 'merge_degree', 'total_children',
+                             'failure_chain_length'])
     print df
