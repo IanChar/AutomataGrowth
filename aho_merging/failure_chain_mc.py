@@ -25,7 +25,15 @@ class FailureChain(object):
             num_realizations: The number of times to run the MC.
         Returns: Probability vector represented as a list.
         """
-        pass
+        results = []
+        for _ in xrange(num_realizations):
+            curr_state = 1
+            for _ in xrange(depth):
+                curr_state = self._transition(curr_state)
+            while curr_state > len(results):
+                results.append(0)
+            results[curr_state - 1] += 1
+        return [r / num_realizations for r in results]
 
     def get_realization_path(self, depth):
         """Get the history of where one realization went to.
@@ -33,7 +41,10 @@ class FailureChain(object):
             depth: The depth to go to.
         Returns: List of the states visited.
         """
-        pass
+        path = [1]
+        for _ in xrange(depth):
+            path.append(self._transition(path[-1]))
+        return path
 
     def print_transition_mat(self):
         """Print out probability transition matrix."""
@@ -131,7 +142,6 @@ def _get_prob_letter_in_set(probs, letter_index, accum=None, nxt_ind=None,
     """
     if accum is None:
         accum, nxt_ind, set_size = 1, 0, 0
-    print accum, nxt_ind, set_size
     if nxt_ind == letter_index:
         accum *= probs[letter_index]
         nxt_ind += 1
@@ -152,6 +162,5 @@ def _get_prob_letter_in_set(probs, letter_index, accum=None, nxt_ind=None,
 
 if __name__ == '__main__':
     FC = FailureChain([0.5 for _ in range(4)])
-    for _ in range(3):
-        FC._compute_next_transition_row()
-    FC.print_transition_mat()
+    print FC.get_stationary_dist(15, 100)
+    print FC.get_realization_path(5)
