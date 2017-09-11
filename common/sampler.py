@@ -31,7 +31,8 @@ class DepthSampler(object):
             'total_children': self._get_total_children,
             'new_thread': self._get_has_new_thread,
             'merge_degree': self._get_merged_degree,
-            'failure_chain_length': self._get_failure_chain_lengths,
+            'failure_chain_lengths': self._get_failure_chain_lengths,
+            'failure_chain_path': self._get_single_failure_chain_path,
         }
 
     def draw_samples(self, num_samples, props):
@@ -246,6 +247,26 @@ class DepthSampler(object):
                     seen.add(child.sid)
         return results
 
+    def _get_single_failure_chain_path(self, root):
+        """Get the lengths of failure chains for states across one single path.
+        Args:
+            root: The root of the DFA.
+        Returns: List of integers each representing the size of the failure
+            chain at that particular depth.
+        """
+        path = [0, 1]
+        # Iterate through to find first state at appropriate depth.
+        state = root
+        for child in state.goto.values():
+            if child is not state:
+                state = child
+                break
+        while len(state.goto) > 0:
+            state = state.goto.values()[0]
+            chain_length = _count_failure_chain(state)
+            path.append(chain_length)
+        return path
+
 
 def _count_failure_chain(state):
     count = 0
@@ -259,8 +280,8 @@ def _is_thread(state):
     return state.failure is not None and state.failure.depth > 0
 
 if __name__ == '__main__':
-    ds = DepthSampler([0.5 for _ in range(4)], 4)
-    df = ds.draw_samples(1, ['states', 'threads', 'thread_children',
+    DS = DepthSampler([0.5 for _ in range(4)], 4)
+    DF = DS.draw_samples(1, ['states', 'threads', 'thread_children',
                              'new_thread', 'merge_degree', 'total_children',
-                             'failure_chain_length'])
-    print df
+                             'failure_chain_lengths', 'failure_chain_path'])
+    print DF

@@ -41,8 +41,8 @@ class FailureChain(object):
             depth: The depth to go to.
         Returns: List of the states visited.
         """
-        path = [1]
-        for _ in xrange(depth):
+        path = [0, 1]
+        for _ in xrange(depth - 1):
             path.append(self._transition(path[-1]))
         return path
 
