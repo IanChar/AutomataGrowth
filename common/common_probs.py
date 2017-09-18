@@ -10,6 +10,19 @@ def get_c2(alph_size):
     """
     return (4 ** alph_size - 3 ** alph_size) / ((2 ** alph_size - 1) ** 2)
 
+def get_arbitrary_c2(probs):
+    """Get the theoretical value of c_2 for arbitrary probabilities.
+    Args:
+        probs: A list of the probabilities for each letter.
+    Returns: The calculated probability.
+    """
+    numer = 1
+    all_comps = 1
+    for prob in probs:
+        all_comps *= (1 - prob)
+        numer *= 1 - prob ** 2
+    return (1 - numer) / ((1 - all_comps) ** 2)
+
 def get_c12(alph_size):
     """Gets the probability that one of the non-empty subsets matches with two
     other non-empty subsets. Each chosen independently and uniformly at random.

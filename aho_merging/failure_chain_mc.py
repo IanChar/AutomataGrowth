@@ -6,13 +6,16 @@ from random import random
 class FailureChain(object):
     """Class representing the MC that models Failure Chain length."""
 
-    def __init__(self, probs):
+    def __init__(self, probs, alpha=None):
         """Args:
             probs: The probabilities of seeing each letter in G.
         """
         # Alpha is the probability that an arbitrary letter is in an arbitrary
         # set.
-        self._alpha = _get_alpha(probs)
+        if alpha is None:
+            self._alpha = _get_alpha(probs)
+        else:
+            self._alpha = alpha
         # Cache for the geometric distribution probabilities of falling down
         # the failure chain. (This is L in my notes).
         self._geom_cache = []
