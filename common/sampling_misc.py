@@ -8,6 +8,8 @@ import sys
 from collections import deque
 import pandas as pd
 
+from string_comparisons import prefix_substring_match
+
 sys.path.append('..')
 import merge_alg
 
@@ -82,21 +84,71 @@ def sample_state_has_new_thread(num_samples, probs, depth,
     return pd.DataFrame({'failure_chain_length': chain_lengths,
                          'has_new_thread': has_new_threads})
 
+def sample_failure_depth_size_trend(num_samples, probs, depth1, depth2):
+    """Sample whether depth2 has a failure to depth1, how many states depth
+       1 has, and if G[1:depth1] == G[depth2-depth1:depth1]
+    Args:
+        num_samples: The number of samples to look at.
+        probs: The probability of seeing each letter in a set.
+        depth1: The depth where we count number of states.
+        depth2: Want to see if depth2 has failure to depth1.
+    Returns: DataFrame with 'has_failure' (0 or 1), 'depth_size', and
+        'string_match' (0 or 1).
+    """
+    has_failure = []
+    depth_size = []
+    string_match = []
+    alphabet = string_util.get_default_alphabet(len(probs))
+    for _ in xrange(num_samples):
+        gen_string = string_util.create_random_string(probs, depth2)
+        # Check the string first.
+        string_match.append(prefix_substring_match(gen_string,
+                                                   depth2 - depth1, depth1))
+        dfa = merge_alg.aho_merge(gen_string, alphabet)
+        root = dfa.get_root()
+        # Iterate over graph once instead of helper functions.
+        curr_depth_size = 0
+        curr_has_failure = 0
+        queue = deque()
+        queue.appendleft(root)
+        seen = set()
+        seen.add(root.sid)
+        while len(queue) > 0:
+            curr = queue.pop()
+            if curr.depth == depth1:
+                curr_depth_size += 1
+            elif curr.depth == depth2 and curr.failure.depth == depth1:
+                curr_has_failure = 1
+                break # Can break here since doing BFS
+            for child in curr.goto.values():
+                if child.sid not in seen:
+                    queue.appendleft(child)
+                    seen.add(child.sid)
+
+        has_failure.append(curr_has_failure)
+        depth_size.append(curr_depth_size)
+    # Return lists as a pandas dataframe.
+    return pd.DataFrame({'string_match': string_match,
+                         'has_failure': has_failure,
+                         'depth_size': depth_size})
+
+
 def _get_states_at_depth(root, depth):
     """Assemble all states at the specified depth."""
     queue = deque()
     queue.appendleft(root)
     seen = set()
+    seen.add(root.sid)
     states = []
     while len(queue) > 0:
         curr = queue.pop()
-        seen.add(curr.sid)
         if curr.depth == depth:
             states.append(curr)
         else:
             for child in curr.goto.values():
                 if child.sid not in seen:
                     queue.appendleft(child)
+                    seen.add(child.sid)
     return states
 
 def _has_new_thread(state):
@@ -118,4 +170,5 @@ def _get_failure_chain_length(state):
 if __name__ == '__main__':
     # print sample_state_has_new_thread(10, [0.5 for _ in range(4)], 15)
     # print sample_state_has_new_thread(10, [0.5 for _ in range(4)], 15, [2])
-    print sample_stat_failure_chain_dist(10, [0.5 for _ in range(4)], 1)
+    # print sample_stat_failure_chain_dist(10, [0.5 for _ in range(4)], 1)
+    print sample_failure_depth_size_trend(10, [0.5 for _ in range(4)], 3, 7)
