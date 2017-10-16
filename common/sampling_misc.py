@@ -132,6 +132,25 @@ def sample_failure_depth_size_trend(num_samples, probs, depth1, depth2):
                          'has_failure': has_failure,
                          'depth_size': depth_size})
 
+def sample_total_states(num_samples, probs, length):
+    """Sample the total number of states in the DFA.
+    Args:
+        num_samples: The number of samples to take.
+        probs: The probabilities of seeing each letter.
+        length: The length of the generalized string to test.
+    Returns: Tuple with first thing being average and second being max.
+    """
+    max_states = 0
+    avg_states = 0
+    alphabet = string_util.get_default_alphabet(len(probs))
+    for _ in xrange(num_samples):
+        gen_string = string_util.create_random_string(probs, length)
+        dfa = merge_alg.aho_merge(gen_string, alphabet)
+        num_states = dfa.get_num_states()
+        avg_states += num_states
+        if max_states < num_states:
+            max_states = num_states
+    return (avg_states / num_samples, max_states)
 
 def _get_states_at_depth(root, depth):
     """Assemble all states at the specified depth."""
