@@ -152,6 +152,36 @@ def sample_total_states(num_samples, probs, length):
             max_states = num_states
     return (avg_states / num_samples, max_states)
 
+def sample_signature_size(num_samples, probs, depth):
+    """Sample the signature size at the depth.
+    Args:
+        num_samples: Number of samples to do.
+        probs: The probabilities of seeing a letter.
+        depth: The depth at which to sample at.
+    Returns: List of the samples drawn.
+    """
+    alph = string_util.get_default_alphabet(len(probs))
+    samples = []
+    for _ in xrange(num_samples):
+        gen_string = string_util.create_random_string(probs, depth)
+        dfa = merge_alg.aho_merge(gen_string, alph)
+        # Do DFS until we see state of appropriate depth.
+        root = dfa.get_root()
+        stack = deque()
+        stack.append(root)
+        seen = set([root.sid])
+        while len(stack) > 0:
+            curr = stack.pop()
+            if curr.depth == depth:
+                samples.append(_get_failure_chain_length(curr))
+                break
+            for child in curr.goto.values():
+                if child.sid not in seen:
+                    stack.append(child)
+                    seen.add(child.sid)
+    return samples
+
+
 def _get_states_at_depth(root, depth):
     """Assemble all states at the specified depth."""
     queue = deque()
