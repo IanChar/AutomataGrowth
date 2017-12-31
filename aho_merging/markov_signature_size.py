@@ -18,12 +18,13 @@ def get_ptm(c_2, n):
     ptm[-1, :] = last_row[:-1]
     return ptm
 
-def expected_sizes(c_2, n):
-    """Get the expected size at each depth of the tree.
+def lower_bound(c_2, n):
+    """Get the lower bound of expected size at each depth of the tree.
     Args:
         c_2: The probability of having overlap.
         n: The depth to go to in the tree.
-    Returns: Array of the expected sizes where ith index is number of size i.
+    Returns: Array of the expected sizes where ith index is number of size
+             i + 2.
     """
     ptm = get_ptm(c_2, n)
     curr = np.zeros((1, n))

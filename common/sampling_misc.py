@@ -173,14 +173,13 @@ def sample_signature_size(num_samples, probs, depth):
         while len(stack) > 0:
             curr = stack.pop()
             if curr.depth == depth:
-                samples.append(_get_failure_chain_length(curr))
+                samples.append(_get_failure_chain_length(curr) + 1)
                 break
             for child in curr.goto.values():
                 if child.sid not in seen:
                     stack.append(child)
                     seen.add(child.sid)
     return samples
-
 
 def _get_states_at_depth(root, depth):
     """Assemble all states at the specified depth."""

@@ -46,6 +46,7 @@ class FailureTree(object):
         queue = deque()
         seen = set()
         seen.add(root.sid)
+        self.depth_sizes.append(1)
         for child in root.goto.values():
             if child.sid not in seen:
                 queue.appendleft(child)
