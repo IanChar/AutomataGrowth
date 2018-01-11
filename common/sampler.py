@@ -33,6 +33,7 @@ class DepthSampler(object):
             'merge_degree': self._get_merged_degree,
             'failure_chain_lengths': self._get_failure_chain_lengths,
             'failure_chain_path': self._get_single_failure_chain_path,
+            'growth_ratio': self._get_growth_ratio,
         }
 
     def draw_samples(self, num_samples, props):
@@ -267,6 +268,19 @@ class DepthSampler(object):
             path.append(chain_length)
         return path
 
+    def _get_growth_ratio(self, root):
+        """Get the growth ratio i.e. (states in depth n + 1)/(states in depth n)
+        Args:
+            root: The root of the DFA.
+        Returns: list of the ratios, note the last index is 0.
+        """
+        # This is bad because could possibly call get states twice, doing double
+        # the work rather than reusing but oh well.
+        states = self._get_states_per_depth(root)
+        ratios = [0 for _ in xrange(self.length + 1)]
+        for ind in xrange(self.length):
+            ratios[ind] = states[ind + 1] / states[ind]
+        return ratios
 
 def _count_failure_chain(state):
     count = 0
