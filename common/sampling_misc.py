@@ -7,6 +7,7 @@ from __future__ import division
 import sys
 from collections import deque
 import pandas as pd
+import numpy as np
 
 from string_comparisons import prefix_substring_match
 
@@ -138,19 +139,19 @@ def sample_total_states(num_samples, probs, length):
         num_samples: The number of samples to take.
         probs: The probabilities of seeing each letter.
         length: The length of the generalized string to test.
-    Returns: Tuple with first thing being average and second being max.
+    Returns: Tuple with first thing being average, second being max, and third
+        the standard deviation.
     """
     max_states = 0
     avg_states = 0
+    states = []
     alphabet = string_util.get_default_alphabet(len(probs))
     for _ in xrange(num_samples):
         gen_string = string_util.create_random_string(probs, length)
         dfa = merge_alg.aho_merge(gen_string, alphabet)
         num_states = dfa.get_num_states()
-        avg_states += num_states
-        if max_states < num_states:
-            max_states = num_states
-    return (avg_states / num_samples, max_states)
+        states.append(num_states)
+    return (np.mean(states), max(states), np.std(states))
 
 def sample_signature_size(num_samples, probs, depth):
     """Sample the signature size at the depth.
