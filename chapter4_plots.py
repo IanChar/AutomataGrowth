@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import sys
 import numpy as np
 from scipy.stats import pearsonr, spearmanr
+import pandas as pd
 
 sys.path.append('./aho_merging')
 sys.path.append('./common')
@@ -14,6 +15,9 @@ import arbitrary_probs_util as util
 from merge_alg import aho_merge
 from sampler import DepthSampler
 from sampling_misc import sample_total_states
+
+# %% Read in data frames
+df10k50 = pd.read_csv('10k_50length.csv')
 
 # %% Constants
 
@@ -118,9 +122,10 @@ df['thread_children'] = (df['thread_children']
 #                       .map(lambda l: 0 if len(l) == 0 else sum(l) / len(l)))
 
 # %% Get overall spearman r coeff
-d = 20
-ys = df[df['depth'] >= d]['thread_children'].tolist()
-zs = df[df['depth'] >= d]['threads'].tolist()
+df = df10k50
+d = 45
+ys = df[df['depth'] == d]['thread_children'].tolist()
+zs = df[df['depth'] == d]['threads'].tolist()
 print spearmanr(zs, ys)
 
 # %% Plot Spearman r coeff estimates by depth.
@@ -140,8 +145,9 @@ plt.axhline(0, linestyle=':')
 plt.show()
 
 # %% Negative correlation between number of particles and offspring.
-depth = 20
-cleaned = df[df['depth'] >= depth]
+df = df10k50
+depth = 45
+cleaned = df[df['depth'] == depth]
 # cleaned = df
 cleaned = cleaned[np.abs(cleaned.threads-cleaned.threads.mean())<=(3*cleaned.threads.std())]
 cleaned = cleaned[np.abs(cleaned.thread_children-cleaned.thread_children.mean())<=(3*cleaned.thread_children.std())]
@@ -277,23 +283,23 @@ plt.savefig('figs/three_convergence_errors.png')
 plt.show()
 
 # %% all three for expected value upper bound.
-avgs10 = depth_group10['threads'].mean().tolist()
-avgs25 = depth_group25['threads'].mean().tolist()
+# avgs10 = depth_group10['threads'].mean().tolist()
+# avgs25 = depth_group25['threads'].mean().tolist()
 avgs50 = depth_group['threads'].mean().tolist()
 upper = fin_mux / ( 1 - fin_muy)
 
 # plt.errorbar(depths, avg_particles, yerr=std_particles, capsize=3)
-plt.plot(range(11), avgs10, alpha=0.75, label='$|G| = 10$')
-plt.plot(range(26), avgs25, alpha=0.75, label='$|G| = 25$')
-plt.plot(range(51), avgs50, alpha=0.75, label='$|G| = 50$')
-plt.axhline(upper, linestyle='--')
+# plt.plot(range(11), avgs10, alpha=0.75, label='$|G| = 10$')
+# plt.plot(range(26), avgs25, alpha=0.75, label='$|G| = 25$')
+plt.plot(range(51), avgs50, alpha=0.75, label='Average Particles')
+plt.axhline(upper, linestyle='--', label='Approximate Upper Bound')
 plt.xlabel('Depth')
-plt.ylabel('Average Number of States in Depth')
-plt.legend(bbox_to_anchor=[1, 0.35])
-plt.savefig('figs/three_upperbound_particles.png')
+plt.ylabel('Average Number of Particles in Depth')
+plt.legend(bbox_to_anchor=[1, 0.2])
+plt.savefig('figs/upperbound_particles.png')
 plt.show()
 
-# %% all three total states trend.
+# %% all three total states trend. (This is actually not good b/c fixed length)
 avgs10 = depth_group10['threads'].mean().tolist()
 avgs25 = depth_group25['threads'].mean().tolist()
 avgs50 = depth_group['threads'].mean().tolist()
@@ -315,4 +321,75 @@ plt.xlabel('Depth')
 plt.ylabel('Cumulative Number of States in Depth')
 plt.legend(bbox_to_anchor=[1, 0.35])
 plt.savefig('figs/three_expected_lin_trend.png')
+plt.show()
+
+# %% Draw samples for linear trend.
+samps = 10000
+probs = [0.5 for _ in range(4)]
+gen_lengths = range(5, 51, 5)
+every5 = [sample_total_states(samps, probs, l)[0] for l in gen_lengths]
+
+# %% Make linear trend.
+est_slope = 1 + fin_mux / (1 - fin_muy)
+plt.plot(gen_lengths, [est_slope * l for l in gen_lengths], '--', label='Estimated Trend')
+plt.plot(gen_lengths, every5, label='Sampled Trend')
+plt.xlabel('Generalized String Length')
+plt.ylabel('Average Total Number of States')
+plt.legend(bbox_to_anchor=[0.4, 1])
+plt.savefig('figs/lin_trend_alph4.png')
+plt.show()
+
+# %% Get data for alphabet size of 8
+SAMPLES = 1000
+DEPTH_MAX = 100
+ds = DepthSampler([0.5 for _ in range(6)], DEPTH_MAX)
+df = ds.draw_samples(SAMPLES, ['threads', 'new_thread', 'thread_children'])
+df['thread_children'] = (df['thread_children']
+                         .map(lambda l: 0 if len(l) == 0 else sum(l) / len(l)))
+depth_group = df.groupby('depth')
+muxs = depth_group['new_thread'].mean().tolist()
+stdxs = depth_group['new_thread'].std().tolist()
+muys = depth_group['thread_children'].mean().tolist()
+stdys = depth_group['thread_children'].std().tolist()
+fin_mux, fin_muy = muxs[-3], muys[-3]
+print [fin_mux, fin_muy]
+
+plt.plot(range(DEPTH_MAX + 1), muxs)
+plt.plot(range(DEPTH_MAX + 1), muys)
+plt.show()
+
+# %%
+print muys[-20:]
+
+# %% Draw samples for linear trend.
+samps = 1000
+probs = [0.5 for _ in range(6)]
+gen_lengths = range(5, 51, 5)
+every5 = [sample_total_states(samps, probs, l)[0] for l in gen_lengths]
+print every5
+
+# %% Plot comparison of different estimates
+gen_lengths = range(5, 51, 5)
+mux1, muy1 = 0.541, 0.8464052850542148
+mux2, muy2 = 0.745, 0.903053230350529
+mux3, muy3 = 0.803, 0.938516247415957
+
+data1 = [10.613, 33.152000000000001, 54.189, 75.971000000000004, 105.49299999999999, 119.90000000000001, 150.09800000000001, 170.71600000000001, 191.828, 210.63499999999999]
+data2 = [13.965999999999999, 48.057000000000002, 93.468000000000004, 141.10400000000001, 194.67099999999999, 229.428, 289.06299999999999, 330.10300000000001, 372.46600000000001, 411.935]
+data3 = [15.510999999999999, 59.430999999999997, 126.84099999999999, 190.167, 259.73099999999999, 346.67099999999999, 424.13, 500.85500000000002, 530.98599999999999, 620.48299999999995]
+
+slope1 = 1 + mux1/(1 - muy1)
+slope2 = 1 + mux2/(1 - muy2)
+slope3 = 1 + mux3/(1 - muy3)
+
+plt.plot(gen_lengths, [slope1 * l for l in gen_lengths], 'r--', label='$a=3$')
+plt.plot(gen_lengths, data1, 'r')
+plt.plot(gen_lengths, [slope2 * l for l in gen_lengths], 'g--', label='$a=5$')
+plt.plot(gen_lengths, data2, 'g')
+plt.plot(gen_lengths, [slope3 * l for l in gen_lengths], 'b--', label='$a=6$')
+plt.plot(gen_lengths, data3, 'b')
+plt.xlabel('Generalized String Length')
+plt.ylabel('Average Total Number of States')
+plt.legend(bbox_to_anchor=[0.25, 1])
+plt.savefig('figs/lin_trend_three.png')
 plt.show()
