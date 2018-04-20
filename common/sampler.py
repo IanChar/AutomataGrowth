@@ -131,7 +131,7 @@ class DepthSampler(object):
                 if child.sid not in seen:
                     queue.appendleft(child)
                     seen.add(child.sid)
-                    if (_is_thread(curr_node) and _is_thread(child)
+                    if (_is_thread(curr_node) and _is_offspring(child)
                             and child.failure.depth > 1):
                         thread_children += 1
             if thread_children is not None:
@@ -292,6 +292,9 @@ def _count_failure_chain(state):
 
 def _is_thread(state):
     return state.failure is not None and state.failure.depth > 0
+
+def _is_offspring(state):
+    return state.failure is not None and state.failure.depth > 1
 
 if __name__ == '__main__':
     DS = DepthSampler([0.5 for _ in range(4)], 4)

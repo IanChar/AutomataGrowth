@@ -8,6 +8,7 @@ import sys
 import numpy as np
 from scipy.stats import pearsonr, spearmanr
 import pandas as pd
+from sklearn import linear_model
 
 sys.path.append('./aho_merging')
 sys.path.append('./common')
@@ -17,7 +18,7 @@ from sampler import DepthSampler
 from sampling_misc import sample_total_states
 
 # %% Read in data frames
-df10k50 = pd.read_csv('10k_50length.csv')
+df = pd.read_csv('10k_50length.csv')
 
 # %% Constants
 
@@ -30,7 +31,7 @@ Mu_x and mu_y convergence plots.
 
 
 # %% Get data for mu_x, mu_y plots
-SAMPLES = 10000
+SAMPLES = 1000
 DEPTH_MAX = 50
 ds = DepthSampler([0.5 for _ in range(4)], DEPTH_MAX)
 df = ds.draw_samples(SAMPLES, ['threads', 'new_thread', 'thread_children'])
@@ -43,6 +44,13 @@ muys = depth_group['thread_children'].mean().tolist()
 stdys = depth_group['thread_children'].std().tolist()
 
 # %% Plot averages of new particle and offspring
+depth_group = df.groupby('depth')
+muxs = depth_group['new_thread'].mean().tolist()
+stdxs = depth_group['new_thread'].std().tolist()
+muys = depth_group['thread_children'].mean().tolist()
+stdys = depth_group['thread_children'].std().tolist()
+# plt.rc('text', usetex=False)
+DEPTH_MAX = 50
 depths = range(DEPTH_MAX + 1)
 
 plt.figure(1, figsize=(18, 6))
@@ -62,7 +70,6 @@ plt.savefig('figs/avg_new_n_offspring.png')
 plt.show()
 
 # %% Plot errors in mu_x & E[X_n] and mu_y & E[Y_n]
-plt.rc('text', usetex=False)
 depths = range(DEPTH_MAX + 1)
 fin_mux, fin_muy = muxs[-1], muys[-2]
 xdiffs = [abs(x - fin_mux) for x in muxs]
@@ -72,7 +79,7 @@ prob = c_2(4)
 ref_func = lambda t: prob ** t
 ref_vals = [ref_func(d) for d in depths]
 
-plt.figure(1, figsize=(18, 6))
+plt.figure(1, figsize=(16, 6))
 
 plt.subplot(121)
 plt.plot(depths, xdiffs, label='Absolute Difference')
@@ -100,10 +107,11 @@ std_particles = depth_group['threads'].mean().tolist()
 upper = fin_mux / ( 1 - fin_muy)
 
 # plt.errorbar(depths, avg_particles, yerr=std_particles, capsize=3)
-plt.plot(depths, avg_particles)
-plt.axhline(upper, linestyle='--')
+plt.plot(depths, avg_particles, label='Average Number of Particles')
+plt.axhline(upper, linestyle='--', label='Approximate Upper Bound')
+plt.legend(bbox_to_anchor=[1, 0.2])
 plt.xlabel('Depth')
-plt.ylabel('Average Number of States in Depth')
+plt.ylabel('Average Number of Particles in Depth')
 plt.savefig('figs/upperbound_particles.png')
 plt.show()
 
@@ -112,8 +120,8 @@ Negative correlation plots
 """
 
 # %% Get synthetic data for negative correlation Plots
-SAMPLES = 100
-DEPTH_MAX = 50
+SAMPLES = 1000
+DEPTH_MAX = 301
 ds = DepthSampler([0.5 for _ in range(4)], DEPTH_MAX)
 df = ds.draw_samples(SAMPLES, ['threads', 'thread_children'])
 df['thread_children'] = (df['thread_children']
@@ -122,8 +130,8 @@ df['thread_children'] = (df['thread_children']
 #                       .map(lambda l: 0 if len(l) == 0 else sum(l) / len(l)))
 
 # %% Get overall spearman r coeff
-df = df10k50
-d = 45
+# df = df10k50
+d = 200
 ys = df[df['depth'] == d]['thread_children'].tolist()
 zs = df[df['depth'] == d]['threads'].tolist()
 print spearmanr(zs, ys)
@@ -145,16 +153,24 @@ plt.axhline(0, linestyle=':')
 plt.show()
 
 # %% Negative correlation between number of particles and offspring.
-df = df10k50
-depth = 45
+# df = df10k50
+depth = 10
 cleaned = df[df['depth'] == depth]
 # cleaned = df
 cleaned = cleaned[np.abs(cleaned.threads-cleaned.threads.mean())<=(3*cleaned.threads.std())]
 cleaned = cleaned[np.abs(cleaned.thread_children-cleaned.thread_children.mean())<=(3*cleaned.thread_children.std())]
-cleaned.plot('threads', 'thread_children', kind='scatter')
+cleaned.plot('threads', 'thread_children', kind='scatter', figsize=(16, 8))
+# Do Linear Regression
+lr = linear_model.LinearRegression()
+xs = cleaned.as_matrix(['threads'])
+ys = cleaned.as_matrix(['thread_children'])
+lr.fit(xs, ys)
+print lr.coef_
+ypts = lr.predict(xs)
+plt.plot(xs, ypts)
 plt.xlabel('Number of Particles')
 plt.ylabel('Average Offspring')
-plt.savefig('figs/offspring_correlation.png')
+# plt.savefig('figs/correlation_plot1_0.00602046.png')
 plt.show()
 
 # %% Correlation between number of particles and merge degree.
@@ -192,52 +208,54 @@ Assumption comparing values and rates for different gen string sizes
 """
 
 # %% Get data for length 10.
-SAMPLES = 10000
-ds10 = DepthSampler([0.5 for _ in range(4)], 10)
-df10 = ds10.draw_samples(SAMPLES, ['threads', 'new_thread', 'thread_children'])
-df10['thread_children'] = (df10['thread_children']
-                         .map(lambda l: 0 if len(l) == 0 else sum(l) / len(l)))
+# SAMPLES = 10000
+# ds10 = DepthSampler([0.5 for _ in range(4)], 10)
+# df10 = ds10.draw_samples(SAMPLES, ['threads', 'new_thread', 'thread_children'])
+# df10['thread_children'] = (df10['thread_children']
+#                          .map(lambda l: 0 if len(l) == 0 else sum(l) / len(l)))
+df10 = pd.read_csv('10k_10length.csv')
 depth_group10 = df10.groupby('depth')
 muxs10 = depth_group10['new_thread'].mean().tolist()
 stdxs10 = depth_group10['new_thread'].std().tolist()
 muys10 = depth_group10['thread_children'].mean().tolist()
 stdys10 = depth_group10['thread_children'].std().tolist()
-df10.to_csv('10k_10length.csv')
+# df10.to_csv('10k_10length.csv')
 
 # %% Get data for length 25
-ds25 = DepthSampler([0.5 for _ in range(4)], 25)
-df25 = ds25.draw_samples(SAMPLES, ['threads', 'new_thread', 'thread_children'])
-df25['thread_children'] = (df25['thread_children']
-                         .map(lambda l: 0 if len(l) == 0 else sum(l) / len(l)))
+# ds25 = DepthSampler([0.5 for _ in range(4)], 25)
+# df25 = ds25.draw_samples(SAMPLES, ['threads', 'new_thread', 'thread_children'])
+# df25['thread_children'] = (df25['thread_children']
+#                          .map(lambda l: 0 if len(l) == 0 else sum(l) / len(l)))
+df25 = pd.read_csv('10k_25length.csv')
 depth_group25 = df25.groupby('depth')
 muxs25 = depth_group25['new_thread'].mean().tolist()
 stdxs25 = depth_group25['new_thread'].std().tolist()
 muys25 = depth_group25['thread_children'].mean().tolist()
 stdys25 = depth_group25['thread_children'].std().tolist()
-df25.to_csv('10k_25length.csv')
+# df25.to_csv('10k_25length.csv')
 
 # %% Plot means of all three.
 
 
-plt.figure(1, figsize=(18, 6))
+plt.figure(1, figsize=(12, 4))
 
 plt.subplot(121)
-plt.plot(range(11), muxs10, alpha=0.75, label='$|G| = 10$')
-plt.plot(range(26), muxs25, alpha=0.75, label='$|G| = 25$')
-plt.plot(range(51), muxs, alpha=0.75, label='$|G| = 50$')
+plt.plot(range(11), muxs10, label='$|G| = 10$')
+plt.plot(range(26), muxs25, label='$|G| = 25$')
+plt.plot(range(51), muxs, label='$|G| = 50$')
 # plt.errorbar(depths, muxs, yerr=stdxs, capsize=3)
 plt.xlabel('Depth')
-plt.ylabel('Average New Particles')
-plt.legend(bbox_to_anchor=[1, 0.25])
+plt.ylabel('Average $X_n$')
+plt.legend(bbox_to_anchor=[1, 0.31])
 
 plt.subplot(122)
 # plt.errorbar(depths, muys, yerr=stdys, capsize=3)
-plt.plot(range(10), muys10[:-1], alpha=0.75, label='$|G| = 10$')
-plt.plot(range(25), muys25[:-1], alpha=0.75, label='$|G| = 25$')
-plt.plot(range(50), muys[:-1], alpha=0.75, label='$|G| = 50$')
+plt.plot(range(10), muys10[:-1], label='$|G| = 10$')
+plt.plot(range(25), muys25[:-1], label='$|G| = 25$')
+plt.plot(range(50), muys[:-1], label='$|G| = 50$')
 plt.xlabel('Depth')
-plt.ylabel('Average Offspring')
-plt.legend(bbox_to_anchor=[1, 0.25])
+plt.ylabel('Average $Y_n$')
+plt.legend(bbox_to_anchor=[1, 0.31])
 plt.savefig('figs/three_avg_new_n_offspring.png')
 plt.show()
 
@@ -392,4 +410,28 @@ plt.xlabel('Generalized String Length')
 plt.ylabel('Average Total Number of States')
 plt.legend(bbox_to_anchor=[0.25, 1])
 plt.savefig('figs/lin_trend_three.png')
+plt.show()
+
+"""
+Show Covariance is bounded
+"""
+# %% Covaraiance plot
+df = pd.read_csv('10k_50length.csv')
+df['prod'] = df['threads'] * df['thread_children']
+grouped = df.groupby(['depth'])
+avg_prods = df.groupby(['depth'])['prod'].mean().tolist()
+avg_yns = grouped['thread_children'].mean().tolist()
+avg_zns = grouped['threads'].mean().tolist()
+
+plt.plot(range(len(avg_prods)), avg_prods, label='$E[Y_n \cdot Z_n]$')
+exp_prods = [avg_yns[i] * avg_zns[i] for i in range(len(avg_yns))]
+plt.plot(range(len(exp_prods)), exp_prods, label='$E[Y_n] \cdot E[Z_n]$')
+covs = []
+for i in range(len(avg_prods)):
+    covs.append(avg_prods[i] - exp_prods[i])
+plt.plot(range(50), covs[:-1], label='$Cov(Y_n, Z_n)$')
+plt.xlabel('Depth')
+plt.ylim([0, 8])
+plt.legend(bbox_to_anchor=[1, 1])
+plt.savefig('figs/cov_trend.png')
 plt.show()
