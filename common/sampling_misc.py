@@ -10,12 +10,10 @@ import pandas as pd
 import numpy as np
 
 from string_comparisons import prefix_substring_match
+import arbitrary_probs_util as string_util
 
 sys.path.append('..')
 import merge_alg
-
-sys.path.append('../aho_merging')
-import arbitrary_probs_util as string_util
 
 def sample_stat_failure_chain_dist(num_samples, probs, depth):
     """Sample to estimate the stationary distribution of failure chain length.

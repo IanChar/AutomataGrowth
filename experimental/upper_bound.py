@@ -2,8 +2,8 @@
 from __future__ import division
 import sys
 
-import arbitrary_probs_util as string_util
 sys.path.append('../common')
+import arbitrary_probs_util as string_util
 from string_comparisons import prefix_substring_match
 
 def compute_signature_bound(gen_string, depth):

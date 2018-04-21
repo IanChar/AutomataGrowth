@@ -5,8 +5,8 @@ import random
 import matplotlib.pyplot as plt
 import sys
 
-sys.path.append('./automata')
-sys.path.append('./aho_merging')
+sys.path.append('../marschall')
+sys.path.append('../experimental')
 import single_dfa_construction
 import aho_construction
 

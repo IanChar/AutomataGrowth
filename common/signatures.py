@@ -6,8 +6,6 @@ from collections import deque
 
 sys.path.append('..')
 import merge_alg
-
-sys.path.append('../aho_merging')
 import arbitrary_probs_util as string_util
 
 

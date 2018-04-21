@@ -6,7 +6,8 @@ import sys
 import random
 
 sys.path.append('./..')
-sys.path.append('./../automata')
+sys.path.append('./../marschall')
+sys.path.append('../common')
 from automata import Automata
 import aho_construction
 import single_dfa_construction

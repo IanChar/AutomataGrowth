@@ -6,6 +6,7 @@ import sys
 sys.path.append('..')
 
 import merge_alg
+sys.path.append('../common')
 import arbitrary_probs_util as string_util
 
 class DistributionGroup(object):

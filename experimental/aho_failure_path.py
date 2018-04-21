@@ -6,7 +6,8 @@ from random import random
 import sys
 
 sys.path.append('./..')
-sys.path.append('./../automata')
+sys.path.append('./../marschall')
+sys.path.append('../common')
 import aho_construction
 import time_compare
 

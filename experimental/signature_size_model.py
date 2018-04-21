@@ -4,6 +4,8 @@ from __future__ import division
 from itertools import izip
 from numpy.random import binomial
 
+import sys
+sys.path.append('../common')
 import arbitrary_probs_util as string_util
 import arbitrary_probs_calcs as calcs
 
