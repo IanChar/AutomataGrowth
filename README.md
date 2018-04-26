@@ -1,5 +1,5 @@
 # Char/Lladser Research
-
+## Optimal Construction of Minimal DFA for Generalized Strings
 ## Overview
 
 Here you will find the code for research on minimal deterministic finite automata for generalized strings. For more information about this research see INSERT LINKS HERE!
