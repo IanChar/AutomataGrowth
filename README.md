@@ -28,7 +28,7 @@ To run all of the code in this repository you will need to have...
 
 ## Code
 
-The main algorithm presented in the paper can be found in [merge_alg.py](./merge_alg.py). This file also contains the deterministic finite automaton object that is returned by the algorithm. The implementation of this data structure is done via objects and pointers. Currently this file is set up so that if one runs
+The main algorithm presented in the BS/MS thesis and paper can be found in [merge_alg.py](./merge_alg.py). This file also contains the deterministic finite automaton object that is returned by the algorithm. The implementation of this data structure is done via objects and pointers. Currently this file is set up so that if one runs
 
 ```
 python merge_alg.py
@@ -38,7 +38,7 @@ a detailed description of the minimal DFA corresponding to {A, B}{C, B, D}{A}{C,
 
 #### Sampling from Synthetic Data
 
-I have also set up a framework to sample from synthetic data relatively easily. If you want to observe how a certain value changes over the depth of the automaton, you might be able to do this with [sampler.py](./common/sampler.py). This file contains the DepthSampler object which, once initialized, can draw samples and find the values of a list of different properties. The synthetic data is returned as a pandas DataFrame where each draw in the DataFrame has a corresponding "depth". The properties that one can observe are as follows:
+I have also set up a framework to sample from synthetic data relatively easily. If you want to observe how a certain value changes over the depth of the automaton, you might be able to do this with [sampler.py](./common/sampler.py). This file contains the DepthSampler object which, once initialized, can draw samples and find the values of a list of different properties. The synthetic data is returned as a pandas' DataFrame where each draw in the DataFrame has a corresponding "depth." The properties that one can observe are as follows:
 
 * states - The number of states within each depth.
 * threads - The number of "threads" (states with a failure not going to start state) within each depth.
