@@ -2,7 +2,7 @@
 ## Optimal Construction of Minimal DFA for Generalized Strings
 ## Overview
 
-Here you will find the code for research on minimal deterministic finite automata for generalized strings. For more information about this research see INSERT LINKS HERE!
+Here you will find the code for research on minimal deterministic finite automata for generalized strings. For more information about this research see https://link.springer.com/content/pdf/10.1007/s11009-019-09706-8.pdf
 
 ## Downloading this Repository
 You will also need to download this repository onto your local machine. To do
